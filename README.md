@@ -108,6 +108,18 @@ tensor([[0.5485, 0.0551],
 ```
 
 # Model List
+- ## Mistral-7B
+  - ### [Bi + MNTP]()
+  - ### [Bi + MNTP + SimCSE]() (Unsupervised state-of-the-art on MTEB)
+  - ### [Bi + MNTP + Supervised](https://huggingface.co/McGill-NLP/LLM2Vec-Mistral-7B-Instruct-v2-mntp-supervised) (state-of-the-art on MTEB among models trained on public data)
+- ## Llama-2-7B
+  - ### [Bi + MNTP]()
+  - ### [Bi + MNTP + SimCSE]()
+  - ### [Bi + MNTP + Supervised]()
+- ## Sheared-Llama-1.3B
+  - ### [Bi + MNTP]()
+  - ### [Bi + MNTP + SimCSE]()
+  - ### [Bi + MNTP + Supervised]()
 
 # Training 
 Training code will be available soon.
