@@ -17,6 +17,7 @@ setup(
         "numpy",
         "tqdm",
         "torch",
+        "peft",
         "transformers>=4.38.1"
     ],
     classifiers=[
