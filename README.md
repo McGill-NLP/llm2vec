@@ -19,50 +19,73 @@ pip install -e .
 ```
 
 ## Getting Started
-LLM2Vec is a generic model, which takes a `tokenizer` and a `model`. First, we define the model and tokenizer using `transformers` library:
+LLM2Vec class is a wrapper on top of HuggingFace models to support sequence encoding and pooling operations. The steps below showcase an example on how to use the library.
 
-```python
-import torch
-from peft import PeftModel
-from transformers import AutoTokenizer, AutoModel, AutoConfig
-
-config = AutoConfig.from_pretrained("McGill-NLP/LLM2Vec-Sheared-LLaMA-mntp", trust_remote_code=True)
-tokenizer = AutoTokenizer.from_pretrained("McGill-NLP/LLM2Vec-Sheared-LLaMA-mntp")
-
-model = AutoModel.from_pretrained("McGill-NLP/LLM2Vec-Sheared-LLaMA-mntp", trust_remote_code=True, config=config, torch_dtype=torch.bfloat16)
-# Loading MNTP-trained LoRA weights
-model = PeftModel.from_pretrained(model, "McGill-NLP/LLM2Vec-Sheared-LLaMA-mntp")
-model = model.merge_and_unload()
-
-# Either loading unsupervised-trained LoRA weights
-model = PeftModel.from_pretrained(model, "McGill-NLP/LLM2Vec-Sheared-LLaMA-unsup-simcse-mean")
-
-# Or loading supervised-trained LoRA weights
-model = PeftModel.from_pretrained(model, "McGill-NLP/LLM2Vec-Sheared-LLaMA-mntp-supervised")
-```
+### Preparing the model
 Here, we first initialize the model and apply MNTP-trained LoRA weights on top. After merging the model with MNTP weights, we can
 - either load the unsupervised-trained LoRA weights (trained with SimCSE objective and wiki corpus)
 - or we can load the model with supervised-trained LoRA weights (trained with contrastive learning and public E5 data).
 
-Then, we define our llm2vec model as follows:
+```python
+import torch
+from transformers import AutoTokenizer, AutoModel, AutoConfig
+from peft import PeftModel
+
+config = AutoConfig.from_pretrained("McGill-NLP/LLM2Vec-Sheared-LLaMA-mntp", trust_remote_code=True)
+tokenizer = AutoTokenizer.from_pretrained("McGill-NLP/LLM2Vec-Sheared-LLaMA-mntp")
+
+# Loading base MNTP model, along with custom code that enables bidirectional connections in decoder-only LLMs
+tokenizer = AutoTokenizer.from_pretrained("McGill-NLP/LLM2Vec-Mistral-7B-Instruct-v2-mntp")
+config = AutoConfig.from_pretrained("McGill-NLP/LLM2Vec-Mistral-7B-Instruct-v2-mntp", trust_remote_code=True)
+model = AutoModel.from_pretrained("McGill-NLP/LLM2Vec-Mistral-7B-Instruct-v2-mntp", trust_remote_code=True, config=config, torch_dtype=torch.bfloat16)
+model = PeftModel.from_pretrained(model, "McGill-NLP/LLM2Vec-Mistral-7B-Instruct-v2-mntp")
+model = model.merge_and_unload() # This can take several minutes
+
+# Loading unsupervised-trained LoRA weights. This loads the trained LoRA weights on top of MNTP model. Hence the final weights are -- Base model + MNTP (LoRA) + SimCSE (LoRA).
+model = PeftModel.from_pretrained(model, "McGill-NLP/LLM2Vec-Mistral-7B-Instruct-v2-unsup-simcse-mean")
+
+# Or loading supervised-trained LoRA weights
+model = PeftModel.from_pretrained(model, "McGill-NLP/LLM2Vec-Mistral-7B-Instruct-v2-mntp-supervised")
+```
+
+### Applying `LLM2Vec` wrapper
+Then, we define our LLM2Vec encoder model as follows:
 
 ```python
 from llm2vec import LLM2Vec
 
-l2v = LLM2Vec(model, tokenizer)
+l2v = LLM2Vec(model, tokenizer, pooling_mode="mean", max_length=512)
 ```
 
-This model now returns the text embedding for any input in the form of `[[instruction, text]]`.
+### Inference
+This model now returns the text embedding for any input in the form of `[[instruction1, text1], [instruction2, text2]]` or `[text1, text2]`. While training, we provide instructions for both sentences in symmetric tasks, and only for for queries in asymmetric tasks.
 
 ```python
-inputs = [
-  ['Retrieve duplicate questions from StackOverflow forum', 'Python (Numpy) array sorting'],
-  ['', 'Sort a list in python'],
-  ['', 'Sort an array in Java'],
+# Encoding queries using instructions
+instruction = 'Given a web search query, retrieve relevant passages that answer the query:'
+queries = [
+    [instruction, 'how much protein should a female eat'],
+    [instruction, 'summit define']
 ]
-repr = l2v.encode(inputs, convert_to_tensor=True)
-sim_pos = torch.nn.functional.cosine_similarity(repr[0].unsqueeze(0), repr[1].unsqueeze(0))
-sim_neg = torch.nn.functional.cosine_similarity(repr[0].unsqueeze(0), repr[2].unsqueeze(0))
+q_reps = l2v.encode(queries)
+
+# Encoding documents. Instruction are not required for documents
+documents = [
+    "As a general guideline, the CDC's average requirement of protein for women ages 19 to 70 is 46 grams per day. But, as you can see from this chart, you'll need to increase that if you're expecting or training for a marathon. Check out the chart below to see how much protein you should be eating each day.",
+    "Definition of summit for English Language Learners. : 1  the highest point of a mountain : the top of a mountain. : 2  the highest level. : 3  a meeting or series of meetings between the leaders of two or more governments."
+]
+d_reps = l2v.encode(documents)
+
+# Compute cosine similarity
+q_reps_norm = torch.nn.functional.normalize(q_reps, p=2, dim=1)
+d_reps_norm = torch.nn.functional.normalize(d_reps, p=2, dim=1)
+cos_sim = torch.mm(q_reps_norm, d_reps_norm.transpose(0, 1))
+
+print(cos_sim)
+"""
+tensor([[0.5486, 0.0554],
+        [0.0567, 0.5437]])
+"""
 ```
 
 # Model List
