@@ -11,6 +11,10 @@ with open("README.md") as fp:
 setup(
     name="llm2vec",
     version=version["__version__"],
+    author="McGill NLP",
+    author_email=f"parishad.behnamghader@mila.quebec",
+    url=f"https://github.com/McGill-NLP/{package_name}",
+    description=f"The official {package_name} library",
     python_requires=">=3.8",
     packages=find_packages(include=[f"{package_name}*"]),
     install_requires=[
