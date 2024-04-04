@@ -125,7 +125,7 @@ class LLM2Vec(nn.Module):
     def encode(self, sentences: Union[str, List[str]],
                batch_size: int = 32,
                show_progress_bar: bool = True,
-               convert_to_numpy: bool = True,
+               convert_to_numpy: bool = False,
                convert_to_tensor: bool = False,
     ):
         if isinstance(sentences[0],str) and isinstance(sentences[-1],int):
