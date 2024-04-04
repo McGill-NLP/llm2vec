@@ -134,6 +134,8 @@ class LLM2Vec(nn.Module):
         if isinstance(sentences[0],list):
             concatenated_input_texts = []
             for sentence in sentences:
+                if len(sentence) == 1:
+                    sentence = [""] + sentence
                 assert isinstance(sentence[0], str)
                 assert isinstance(sentence[1], str)
                 concatenated_input_texts.append(self._convert_to_str(sentence[0], sentence[1]))
