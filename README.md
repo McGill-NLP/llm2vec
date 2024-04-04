@@ -34,17 +34,35 @@ config = AutoConfig.from_pretrained("McGill-NLP/LLM2Vec-Sheared-LLaMA-mntp", tru
 tokenizer = AutoTokenizer.from_pretrained("McGill-NLP/LLM2Vec-Sheared-LLaMA-mntp")
 
 # Loading base MNTP model, along with custom code that enables bidirectional connections in decoder-only LLMs
-tokenizer = AutoTokenizer.from_pretrained("McGill-NLP/LLM2Vec-Mistral-7B-Instruct-v2-mntp")
-config = AutoConfig.from_pretrained("McGill-NLP/LLM2Vec-Mistral-7B-Instruct-v2-mntp", trust_remote_code=True)
-model = AutoModel.from_pretrained("McGill-NLP/LLM2Vec-Mistral-7B-Instruct-v2-mntp", trust_remote_code=True, config=config, torch_dtype=torch.bfloat16)
-model = PeftModel.from_pretrained(model, "McGill-NLP/LLM2Vec-Mistral-7B-Instruct-v2-mntp")
-model = model.merge_and_unload() # This can take several minutes
+tokenizer = AutoTokenizer.from_pretrained(
+    "McGill-NLP/LLM2Vec-Mistral-7B-Instruct-v2-mntp"
+)
+config = AutoConfig.from_pretrained(
+    "McGill-NLP/LLM2Vec-Mistral-7B-Instruct-v2-mntp", trust_remote_code=True
+)
+model = AutoModel.from_pretrained(
+    "McGill-NLP/LLM2Vec-Mistral-7B-Instruct-v2-mntp",
+    trust_remote_code=True,
+    config=config,
+    torch_dtype=torch.bfloat16,
+    device_map="cuda" if torch.cuda.is_available() else "cpu",
+)
+model = PeftModel.from_pretrained(
+    model,
+    "McGill-NLP/LLM2Vec-Mistral-7B-Instruct-v2-mntp",
+)
+model = model.merge_and_unload()  # This can take several minutes on cpu
 
 # Loading unsupervised-trained LoRA weights. This loads the trained LoRA weights on top of MNTP model. Hence the final weights are -- Base model + MNTP (LoRA) + SimCSE (LoRA).
-model = PeftModel.from_pretrained(model, "McGill-NLP/LLM2Vec-Mistral-7B-Instruct-v2-unsup-simcse-mean")
+model = PeftModel.from_pretrained(
+    model, "McGill-NLP/LLM2Vec-Mistral-7B-Instruct-v2-unsup-simcse"
+)
 
 # Or loading supervised-trained LoRA weights
-model = PeftModel.from_pretrained(model, "McGill-NLP/LLM2Vec-Mistral-7B-Instruct-v2-mntp-supervised")
+model = PeftModel.from_pretrained(
+    model, "McGill-NLP/LLM2Vec-Mistral-7B-Instruct-v2-mntp-supervised"
+)
+
 ```
 
 ### Applying `LLM2Vec` wrapper
@@ -61,17 +79,19 @@ This model now returns the text embedding for any input in the form of `[[instru
 
 ```python
 # Encoding queries using instructions
-instruction = 'Given a web search query, retrieve relevant passages that answer the query:'
+instruction = (
+    "Given a web search query, retrieve relevant passages that answer the query:"
+)
 queries = [
-    [instruction, 'how much protein should a female eat'],
-    [instruction, 'summit define']
+    [instruction, "how much protein should a female eat"],
+    [instruction, "summit define"],
 ]
 q_reps = l2v.encode(queries)
 
 # Encoding documents. Instruction are not required for documents
 documents = [
     "As a general guideline, the CDC's average requirement of protein for women ages 19 to 70 is 46 grams per day. But, as you can see from this chart, you'll need to increase that if you're expecting or training for a marathon. Check out the chart below to see how much protein you should be eating each day.",
-    "Definition of summit for English Language Learners. : 1  the highest point of a mountain : the top of a mountain. : 2  the highest level. : 3  a meeting or series of meetings between the leaders of two or more governments."
+    "Definition of summit for English Language Learners. : 1  the highest point of a mountain : the top of a mountain. : 2  the highest level. : 3  a meeting or series of meetings between the leaders of two or more governments.",
 ]
 d_reps = l2v.encode(documents)
 
@@ -82,8 +102,8 @@ cos_sim = torch.mm(q_reps_norm, d_reps_norm.transpose(0, 1))
 
 print(cos_sim)
 """
-tensor([[0.5486, 0.0554],
-        [0.0567, 0.5437]])
+tensor([[0.5485, 0.0551],
+        [0.0565, 0.5425]])
 """
 ```
 
