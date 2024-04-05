@@ -55,7 +55,7 @@ model = model.merge_and_unload()  # This can take several minutes on cpu
 
 # Loading unsupervised-trained LoRA weights. This loads the trained LoRA weights on top of MNTP model. Hence the final weights are -- Base model + MNTP (LoRA) + SimCSE (LoRA).
 model = PeftModel.from_pretrained(
-    model, "McGill-NLP/LLM2Vec-Mistral-7B-Instruct-v2-unsup-simcse"
+    model, "McGill-NLP/LLM2Vec-Mistral-7B-Instruct-v2-mntp-unsup-simcse"
 )
 
 # Or loading supervised-trained LoRA weights
