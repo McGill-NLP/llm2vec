@@ -1,0 +1,19 @@
+a.site-title {
+    @media (min-width: 601px) {
+        font-size: xx-large;
+    }
+    @media (max-width: 600px) {
+        font-size: large;
+    }
+    color: $primary-color;
+
+    &:hover {
+        color: mix($background-color, $primary-color, 25%);
+    }
+}
+
+.theme-toggle {
+    @media (min-width: 601px) {
+        margin: 0px;
+    }
+}

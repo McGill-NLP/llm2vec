@@ -1,0 +1,12 @@
+/*
+   Imported in /assets/css/main-light.scss
+*/
+$background-color: #fff !default;
+$text-color: #000 !default;
+$primary-color: #ED1B2F !default;
+// $footer-background-color: mix($primary-color, $background-color, 100%) !default;
+$link-color: #ED1B2F !default;
+$link-color-hover: mix(#fff, $link-color, 25%) !default;
+$link-color-visited: mix(#000, $link-color, 10%) !default;
+$masthead-link-color: $text-color !default;
+$masthead-link-color-hover: mix($background-color, $text-color, 25%) !default;

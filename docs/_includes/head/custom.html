@@ -1,0 +1,48 @@
+<!-- Add favicon -->
+<link rel="icon" type="image/png" href="{{ site.baseurl }}/assets/images/logo/favicon.png">
+
+{% if site.dark_theme_css %}
+<!-- Dark Mode -->
+<link rel="stylesheet" href="{{ '/assets/css/main.css' | relative_url }}" id="theme-css">
+<link rel="stylesheet alternate" href="{{ site.dark_theme_css | relative_url }}" id="theme-css-dark">
+
+<script type="text/javascript">
+    const updateNodesRel = theme => {
+        const node_light = document.getElementById('theme-css');
+        const node_dark = document.getElementById('theme-css-dark');
+
+        if (theme === "dark") {
+            node_light.setAttribute('rel', 'stylesheet alternate');
+            node_dark.setAttribute('rel', 'stylesheet');
+        }
+        else if (theme === "light") {
+            node_light.setAttribute('rel', 'stylesheet');
+            node_dark.setAttribute('rel', 'stylesheet alternate');
+        }
+    }
+
+    const changeTheme = () => {
+        let theme = sessionStorage.getItem('theme');
+
+        // Change the theme to the other option
+        if (theme === "light") {
+            theme = "dark";
+        } else {
+            theme = "light";
+        }
+        
+        // Update the stored session and the nodes' rel attribute
+        sessionStorage.setItem('theme', theme);
+        updateNodesRel(theme);
+
+        return false;
+    }
+
+    if (sessionStorage.getItem('theme') === null) {
+        sessionStorage.setItem('theme', "light");
+    }
+
+    const theme = sessionStorage.getItem('theme');
+    updateNodesRel(theme);
+</script>
+{% endif %}
