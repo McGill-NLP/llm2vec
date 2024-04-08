@@ -145,4 +145,4 @@ Research: [arXiv preprint](link)
 
 Code: [LLM2Vec on github](https://github.com/McGill-NLP/llm2vec)
 
-Tutorial: [Learn how to pply LLM2Vec to LLaMA-2](https://github.com/McGill-NLP/llm2vec/blob/main/Tutorial_README.md)
+Tutorial: [Learn how to pply LLM2Vec to LLaMA-2](https://github.com/McGill-NLP/llm2vec/blob/main/Tutorial.md)
