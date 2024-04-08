@@ -17,7 +17,7 @@ At its core, LLM2Vec consists of three simple steps: 1) enabling bidirectional a
 
 Adapting a model with the LLM2Vec approach is highly efficient and works with parameter-efficient fine-tuning methods such as LoRA. Additionally, the adaptation can be performed using a general domain corpus such as Wikipedia, requires only a few hundred training steps, and can be run on a single GPU.
 
-![The three steps of the LLM2Vec approach.](./images/overview.png "LLM2Vec overview")
+![The three steps of the LLM2Vec approach.](./overview.png "LLM2Vec overview")
 
 ## State-of-the-art performance
 
@@ -27,19 +27,19 @@ LLM2Vec is not only simple and efficient, it also leads to state-of-the-art perf
 
 We apply LLM2Vec to some of the best-performing LLMs available and evaluate the resulting text embedding models on MTEB. In the unsupervised setting, i.e., without using any labeled training data for contrastive learning, our LLM2Vec transformed models achieve a new state-of-the-art performance of $56.80$, outperforming previous unsupervised approach by a large margin.
 
-![Unsupervised MTEB results.](./images/unsupervised.png "Unsupervised MTEB results")
+![Unsupervised MTEB results.](./unsupervised.png "Unsupervised MTEB results")
 
 ### Supervised results
 
 LLM2Vec does not only provide state-of-the-art performance in the unsupervised setting, it can also be easily combined with supervised contrastive learning. As our results show, applying LLM2Vec before supervised contrastive learning leads to a substantial improvement. Moroever, LLM2Vec in combination with Mistral-7B, the currently best-performing 7B parameter language model, leads to a new state-of-the-art performance of $64.80$ on MTEB among models trained only with publicly available data. 
 
-![Supervised MTEB results.](./images/supervised.png "Supervised MTEB results")
+![Supervised MTEB results.](./supervised.png "Supervised MTEB results")
 
 ## Highly sample-efficient
 
 LLM2Vec transformed models are not only capable of achieving state-of-the-art performance, they also require less training data to perform well, compared to training models without the LLM2vec transformation.
 
-![LLM2Vec is highly sample-efficient.](./images/sample_efficient.png "LLM2Vec is sample-efficient")
+![LLM2Vec is highly sample-efficient.](./sample_efficient.png "LLM2Vec is sample-efficient")
 
 These results make us particularly excited about challenging real-world scenarios where large amounts of labeled data might be costly to aquire.
 
