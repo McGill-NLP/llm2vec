@@ -139,7 +139,7 @@ tensor([[0.5485, 0.0551],
 
 ## Summary
 
-As demonstrated above, LM2Vec is a simple unsupervised approach that can transform any pre-trained decoder-only LLM into a strong text encoder. If you are as excited about LLM2Vec as we are, go ahead and check out our hands-on tutorial which walks you through the different steps of our method. We also welcome contributions on Github and invite the community to share their LLM2vevc-transformed models. 
+As demonstrated above, LM2Vec is a simple unsupervised approach that can transform any pre-trained decoder-only LLM into a strong text encoder. If you are as excited about LLM2Vec as we are, go ahead and check out our hands-on tutorial which walks you through the different steps of our method. We also welcome contributions on Github and invite the community to share their LLM2Vec-transformed models. 
 
 Research: [arXiv preprint](link)
 
