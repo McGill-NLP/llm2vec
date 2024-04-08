@@ -9,7 +9,7 @@ With the widespread availability of large decoder-only language models (LLMs) su
 
 We are excited to present [LLM2Vec: Large Language Models Are Secretly Powerful Text Encoders](link), a simple and efficient solution to transform *any* decoder-only LLM into a powerful text encoder.
 
-Below we give an overview of LLM2Vec and provide a hands-on tutorial that walks you through the steps of transforming a decoder-only LLM into a powerful text encoder.
+Below we give an overview of of the key components of LLM2Vec and present the exciting results we got when bechmarking LLM2Vec models on the challenging [Massive Text Embeddings Benchmark (MTEB)](https://huggingface.co/blog/mteb).
 
 ## A simple and efficient recipe
 
@@ -137,10 +137,12 @@ tensor([[0.5485, 0.0551],
 """
 ```
 
-----
+## Summary
 
-Research: [text](link)
+As demonstrated above, LM2Vec is a simple unsupervised approach that can transform any pre-trained decoder-only LLM into a strong text encoder. If you are as excited about LLM2Vec as we are, go ahead and check out our hands-on tutorial which walks you through the different steps of our method. We also welcome contributions on Github and invite the community to share their LLM2vevc-transformed models. 
 
-Code: [text](link)
+Research: [arXiv preprint](link)
 
-Tutorial: [text](link)
+Code: [LLM2Vec on github](https://github.com/McGill-NLP/llm2vec)
+
+Tutorial: [Learn how to pply LLM2Vec to LLaMA-2](https://github.com/McGill-NLP/llm2vec/blob/main/Tutorial_README.md)
