@@ -1,12 +1,19 @@
 # LLM2Vec Tutorial: Steps for transforming any decoder-only model into a text encoder
 
-LLM2Vec consists of 3 simple steps to transform decoder-only LLMs into text encoders: 1) enabling bidirectional attention, 2) training with masked next token prediction, and 3) unsupervised contrastive learning. The model can be further fine-tuned with supervised data. Here, we provide a tutorial on how to use the LlaMA models. 
+LLM2Vec consists of 3 simple steps to transform decoder-only LLMs into text encoders: 1) enabling bidirectional attention, 2) training with masked next token prediction, and 3) unsupervised contrastive learning. The model can be further fine-tuned with supervised data. Here, we provide a tutorial on how to use the LlaMA models.
+
+This tutorial will focus on the first two steps. After these steps, the model can be trained for unsupervised or supervised contrastive learning like any other encoder model.
 
 ## 1) Enabling Bidirectional Attention
 
-- talk about forward input attention masks
+-  add a conceptual figure here
 
-However, in order to be able to use the bidirectional attentions with all sorts of attentions, we need to create new LLaMA attention classes:
+<!-- Will work for both Llama and Mistral -->
+<!-- mention which transformer version is used for this -->
+
+A decoder-only causal LLM consists of multiple decoder layers, each of which has a self-attention mechanism. We start bottoms-up by first modifying the attention mechanism to be bidirectional.
+
+In order to be able to use the bidirectional attentions with all sorts of attentions, we need to create new LLaMA attention classes:
 ```python
 class ModifiedLlamaAttention(LlamaAttention):
 
@@ -34,8 +41,7 @@ LLAMA_ATTENTION_CLASSES = {
     "sdpa": ModifiedLlamaSdpaAttention,  # Initially, `LlamaSdpaAttention'
 }
 ```
-For now, we have changed all sorts of attention classes to non-causal (i.e., bidirectional).
-
+For now, we have changed all sorts of attention classes to non-causal (i.e., bidirectional). Next, we need to modify the decoder layer to use these new attention classes. the `__init__` function is directly copied from the `transformers` implementation of `LlamaDecoderLayer`. As `LLAMA_ATTENTION_CLASSES` point to the new attention classes, the decoder layer will use bidirectional attentions.
 ```python
 class ModifiedLlamaDecoderLayer(LlamaDecoderLayer):
     def __init__(self, config: LlamaConfig, layer_idx: int):
@@ -48,9 +54,7 @@ class ModifiedLlamaDecoderLayer(LlamaDecoderLayer):
         self.input_layernorm = LlamaRMSNorm(config.hidden_size, eps=config.rms_norm_eps)
         self.post_attention_layernorm = LlamaRMSNorm(config.hidden_size, eps=config.rms_norm_eps)
 ```
-Now the `LlamaDecoderLayer` will use our implementation of `LLAMA_ATTENTION_CLASSES` instead of that in `transformers`.
-
-Now let's build up the new decoder layer in a new LlaMA model class.
+Finally, we need to modify the model class to use the new decoder layer. We create a new model class `LlamaBiModel` that inherits from `LlamaModel` and uses the new `ModifiedLlamaDecoderLayer` in its `__init__` function. Everything else remains the same as the original implementation of `LlamaModel`.
 ```python
 class LlamaBiModel(LlamaModel):
 ```
@@ -76,12 +80,15 @@ class LlamaBiModel(LlamaModel):
 ```
 
 - talk about `from .attn_mask_utils import _prepare_4d_attention_mask_for_sdpa, _prepare_4d_attention_mask` and the LlamaBiModel forward function.
+<!-- Llama has moved to a different  -->
 
 This is not sufficient, as transformers models use specific attention mask generation functions, `_prepare_4d_attention_mask_for_sdpa` and `_prepare_4d_attention_mask`, in the `forward` call of the `LlamaModel`. We now want to manipulate these function...
+<!-- an example to verify output? -->
 
 
 ## 2) Masked Next Token Prediction (MNTP)
 To train our models in masked next token prediction, we again implement a wrapper model class with `LlamaBiModel` as backbone.
+<!-- talk about why this is needed - point to HF script, tell the return type expected -->
 ```python
 class BiLlamaForMNTP(LlamaForCausalLM):
 ```
@@ -163,6 +170,6 @@ def forward(
         )
 ```
 
-## 3.a) Unsupervised Contrastive Learning
+<!-- talk about label shifting -->
 
-## 3.b) Supervised Contrastive Learning
+<!-- point to other resources for simcse and supervised training, as well as pointer to our code -->
