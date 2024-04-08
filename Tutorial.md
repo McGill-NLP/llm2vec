@@ -103,7 +103,7 @@ class BiLlamaForMNTP(LlamaForCausalLM):
         if attention_dropout > 0.0:  # Augmenting Llama model with attention dropout as there is no such parameter in the initialized LlamaConfig
             config.attention_dropout = attention_dropout
         LlamaPreTrainedModel.__init__(self, config)
-        self.model = LlamaBiModel(config)  # Initially, MistralModel
+        self.model = LlamaBiModel(config)  # Initially, LlamaModel
         self.vocab_size = config.vocab_size
         self.lm_head = nn.Linear(config.hidden_size, config.vocab_size, bias=False)
 
