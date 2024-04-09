@@ -1,8 +1,6 @@
 main:
   - title: "Home"
     url: /
-  - title: "Leaderboard"
-    url: /leaderboard/
   - title: "Docs"
     url: /docs/
   - title: "Contact"
