@@ -9,7 +9,7 @@ header:
           url: https://arxiv.org
           icon: "fas fa-book"
         - label: "Blog"
-          url: "https://www.servicenow.com"
+          url: "https://www.servicenow.com/blogs/2024/llm2vec-large-language-models.html"
           icon: "fas fa-newspaper"
         - label: "Tutorial"
           url: "https://mcgill-nlp.github.io/llm2vec/tutorial"
