@@ -90,6 +90,22 @@ We can now use this model for training with masked next token prediction.
 
 In our work, predicting a masked token at position `i`, we compute the loss based on the logits obtained from the token representation at the previous position `i-1`. This shifting is automatically handled by the forward function of `LlamaForCausalLM` as similar shifting is required in the next token prediction task. 
 
+```python
+# Code snippet from LlamaForCausalLM.forward()
+loss = None
+if labels is not None:
+    # Shift so that tokens < n predict n
+    shift_logits = logits[..., :-1, :].contiguous()
+    shift_labels = labels[..., 1:].contiguous()
+    # Flatten the tokens
+    loss_fct = CrossEntropyLoss()
+    shift_logits = shift_logits.view(-1, self.config.vocab_size)
+    shift_labels = shift_labels.view(-1)
+    # Enable model parallelism
+    shift_labels = shift_labels.to(shift_logits.device)
+    loss = loss_fct(shift_logits, shift_labels)
+```
+
 For training, we adapt the huggingface example script for masked language modeling  - [examples/pytorch/language-modeling/run_mlm.py](https://github.com/huggingface/transformers/blob/v4.39.3/examples/pytorch/language-modeling/run_mlm.py). The only change required is to define a mask token, as decoder-only models do not have a mask token by default. We can use the padding token as the mask token. In our work we used underscore `_` as the mask token.
 
 ```python
