@@ -14,7 +14,7 @@ In this tutorial, we will transform LlaMA models into text encoders, however, tr
 A decoder-only causal LLM consists of multiple decoder layers, each of which has a self-attention mechanism. 
 
 <p align="center">
-  <img src="" width="75%" alt="Llama Conceptual overview"/>
+  <img src="https://github.com/McGill-NLP/llm2vec/blob/weblog/docs/assets/images/LLM2Vec-tutorial.png?raw=true" width="75%" alt="Llama Conceptual overview"/>
 </p>
 
 We start bottoms-up by first modifying the attention mechanism to be bidirectional.
