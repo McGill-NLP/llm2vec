@@ -14,7 +14,7 @@ For the scope of this tutorial, we will showcase how to apply LLM2Vec to models 
 A decoder-only causal LLM consists of multiple decoder layers, each of which has a self-attention sub-layer. 
 
 <p align="center">
-  <img src="https://github.com/McGill-NLP/llm2vec/blob/weblog/docs/assets/images/LLM2Vec-tutorial.png?raw=true" width="75%" alt="Llama Conceptual overview"/>
+  <img src="https://github.com/McGill-NLP/llm2vec/blob/weblog/docs/assets/images/LLM2Vec-tutorial.png?raw=true" width="60%" alt="Llama Conceptual overview"/>
 </p>
 
 We start bottoms-up by first modifying the attention mechanism to be bidirectional.
@@ -111,6 +111,9 @@ For training, we adapt the huggingface example script for masked language modeli
 ```python
 tokenizer.mask_token = "_"
 ```
+The bi-directional LLaMA model can now be trained with masked next token prediction.
 
+## Conclusion
+In this tutorial, we have shown how to enable bidirectional connections in a decoder-only LLM and train it with masked next token prediction (first two steps of LLM2Vec). The resulting model can be further fine-tuned with supervised data or used for unsupervised contrastive learning. To learn more about LLM2Vec, check out our [project page](https://mcgill-nlp.github.io/llm2vec/).
 
 <!-- point to other resources for simcse and supervised training, as well as pointer to our code -->
