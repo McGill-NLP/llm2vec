@@ -1,9 +1,7 @@
 ---
-title: "Tutorial"
+title: "LLM2Vec Tutorial: Steps for transforming any decoder-only model into a text encoder"
 permalink: /tutorial/
 ---
-
-# LLM2Vec Tutorial: Steps for transforming any decoder-only model into a text encoder
 
 LLM2Vec consists of 3 simple steps to transform decoder-only LLMs into text encoders: 1) enabling bidirectional attention, 2) training with masked next token prediction, and 3) unsupervised contrastive learning. The model can be further fine-tuned with supervised data. Here, we provide a tutorial on how to use the LlaMA models.
 
