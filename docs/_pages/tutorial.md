@@ -11,11 +11,13 @@ In this tutorial, we will transform LlaMA models into text encoders, however, tr
 
 ## 1) Enabling Bidirectional Attention
 
-TODO:add a conceptual figure here
+A decoder-only causal LLM consists of multiple decoder layers, each of which has a self-attention mechanism. 
 
-<!-- mention which transformer version is used for this -->
+<p align="center">
+  <img src="" width="75%" alt="Llama Conceptual overview"/>
+</p>
 
-A decoder-only causal LLM consists of multiple decoder layers, each of which has a self-attention mechanism. We start bottoms-up by first modifying the attention mechanism to be bidirectional.
+We start bottoms-up by first modifying the attention mechanism to be bidirectional.
 
 HuggingFace implements three attention mechanisms for Llama and Mistral models - Eager, SDPA, and Flash Attention. Here, we only modify the flash attention implementation. In order to be able to use the bidirectional attention, we need to create new LLaMA flash attention class:
 ```python
