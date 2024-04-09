@@ -1,15 +1,11 @@
 main:
   - title: "Home"
     url: /
-  - title: "Docs"
-    url: /docs/
   - title: "Contact"
     url: /contact/
 
 sidebar-docs:  # See "include" in /_config.yml and /docs/_docs
   - title: "Home"
-    url: /docs/
-  - title: "API"
-    url: /docs/api
-  - title: "Training"
-    url: /docs/training
+    url: /
+  - title: "Contact"
+    url: /contact/
