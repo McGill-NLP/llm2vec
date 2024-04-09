@@ -3,12 +3,6 @@ title: "LLM2Vec Tutorial: Steps for transforming any decoder-only model into a t
 permalink: /tutorial/
 ---
 
-<script type="text/javascript"
-
-  src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.3/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
-
-</script>
-
 LLM2Vec consists of 3 simple steps to transform decoder-only LLMs into text encoders: 1) enabling bidirectional attention, 2) training with masked next token prediction, and 3) unsupervised contrastive learning. After the LLM2Vec transformation, the model can be further fine-tuned with supervised data. Here, we provide a tutorial on how to use the LlaMA models.
 
 This tutorial will focus on the first two steps. After completing these steps, the model can be trained for unsupervised or supervised contrastive learning like any other encoder model.
@@ -94,7 +88,7 @@ class BiLlamaForMNTP(LlamaForCausalLM):
 
 We can now use this model for training with masked next token prediction. 
 
-In our work, predicting a masked token at position $i$, we compute the loss based on the logits obtained from the token representation at the previous position $i-1$. This shifting is automatically handled by the forward function of `LlamaForCausalLM` as similar shifting is required in the next token prediction task. 
+In our work, predicting a masked token at position $`i`$, we compute the loss based on the logits obtained from the token representation at the previous position $`i-1`$. This shifting is automatically handled by the forward function of `LlamaForCausalLM` as similar shifting is required in the next token prediction task. 
 
 For training, we adapt the huggingface example script for masked language modeling  - [examples/pytorch/language-modeling/run_mlm.py](https://github.com/huggingface/transformers/blob/v4.39.3/examples/pytorch/language-modeling/run_mlm.py). The only change required is to define a mask token, as decoder-only models do not have a mask token by default. We can use the padding token as the mask token. In our work we used underscore `_` as the mask token.
 
