@@ -3,15 +3,15 @@ title: "LLM2Vec Tutorial: Steps for transforming any decoder-only model into a t
 permalink: /tutorial/
 ---
 
-LLM2Vec consists of 3 simple steps to transform decoder-only LLMs into text encoders: 1) enabling bidirectional attention, 2) training with masked next token prediction, and 3) unsupervised contrastive learning. The model can be further fine-tuned with supervised data. Here, we provide a tutorial on how to use the LlaMA models.
+LLM2Vec consists of 3 simple steps to transform decoder-only LLMs into text encoders: 1) enabling bidirectional attention, 2) training with masked next token prediction, and 3) unsupervised contrastive learning. After the LLM2Vec transformation, the model can be further fine-tuned with supervised data. Here, we provide a tutorial on how to use the LlaMA models.
 
-This tutorial will focus on the first two steps. After these steps, the model can be trained for unsupervised or supervised contrastive learning like any other encoder model.
+This tutorial will focus on the first two steps. After completing these steps, the model can be trained for unsupervised or supervised contrastive learning like any other encoder model.
 
-In this tutorial, we will transform LlaMA models into text encoders, however, transforming Mistral will require similar steps. We will focus on modifying the flash attention implementation as it requires the least changes in the codebase, and the implementation is consistent across models and transformers versions. Our tutorial is based on transformers version 4.39.3.
+For the scope of this tutorial, we will showcase how to apply LLM2Vec to models from the LLaMA-2 model family. For simplicity, we focus on the FlashAttention attention implementation. The following steps have been tested using transformers version 4.39.3.
 
 ## 1) Enabling Bidirectional Attention
 
-A decoder-only causal LLM consists of multiple decoder layers, each of which has a self-attention mechanism. 
+A decoder-only causal LLM consists of multiple decoder layers, each of which has a self-attention sub-layer. 
 
 <p align="center">
   <img src="https://github.com/McGill-NLP/llm2vec/blob/weblog/docs/assets/images/LLM2Vec-tutorial.png?raw=true" width="75%" alt="Llama Conceptual overview"/>
