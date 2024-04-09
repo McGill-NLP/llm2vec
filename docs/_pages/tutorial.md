@@ -88,7 +88,7 @@ class BiLlamaForMNTP(LlamaForCausalLM):
 
 We can now use this model for training with masked next token prediction. 
 
-In our work, predicting a masked token at position $`i`$, we compute the loss based on the logits obtained from the token representation at the previous position $`i-1`$. This shifting is automatically handled by the forward function of `LlamaForCausalLM` as similar shifting is required in the next token prediction task. 
+In our work, predicting a masked token at position `i`, we compute the loss based on the logits obtained from the token representation at the previous position `i-1`. This shifting is automatically handled by the forward function of `LlamaForCausalLM` as similar shifting is required in the next token prediction task. 
 
 For training, we adapt the huggingface example script for masked language modeling  - [examples/pytorch/language-modeling/run_mlm.py](https://github.com/huggingface/transformers/blob/v4.39.3/examples/pytorch/language-modeling/run_mlm.py). The only change required is to define a mask token, as decoder-only models do not have a mask token by default. We can use the padding token as the mask token. In our work we used underscore `_` as the mask token.
 
