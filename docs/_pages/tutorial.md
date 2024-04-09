@@ -47,11 +47,7 @@ class ModifiedLlamaDecoderLayer(LlamaDecoderLayer):
         self.post_attention_layernorm = LlamaRMSNorm(config.hidden_size, eps=config.rms_norm_eps)
 ```
 Finally, we need to modify the main model class to use the new decoder layer. We create a new model class `LlamaBiModel` that inherits from `LlamaModel` and uses the new `ModifiedLlamaDecoderLayer` in its `__init__` function. Everything else remains the same as the original implementation of `LlamaModel`.
-```python
-class LlamaBiModel(LlamaModel):
-```
 
-We first have to use the `ModifiedLlamaDecoderLayer` in our `LlamaBiModel` class.
 ```python
 class LlamaBiModel(LlamaModel):
     def __init__(self, config):
@@ -73,89 +69,32 @@ That's it! We have successfully created a bidirectional LLaMA model. We can now 
 
 
 ## 2) Masked Next Token Prediction (MNTP)
-To train our models in masked next token prediction, we again implement a wrapper model class with `LlamaBiModel` as backbone.
-<!-- talk about why this is needed - point to HF script, tell the return type expected -->
-```python
-class BiLlamaForMNTP(LlamaForCausalLM):
-```
 
-This class will have a different `__init__` and `forward` functions as it needs special backbone model and special loss definition for MNTP.
+To train our models in masked next token prediction, we again implement a wrapper model class on top of `LlamaForCausalLM` class with `LlamaBiModel` as backbone.
+
+The default `LlamaForCausalLM` class object has a `model` attribute that is an instance of `LlamaModel`. We will replace this model with our new `LlamaBiModel`.
 
 ```python
 class BiLlamaForMNTP(LlamaForCausalLM):
-    _tied_weights_keys = ["lm_head.weight"]
 
     def __init__(self, config, attention_dropout=0.0):
-        if attention_dropout > 0.0:  # Augmenting Llama model with attention dropout as there is no such parameter in the initialized LlamaConfig
-            config.attention_dropout = attention_dropout
-        LlamaPreTrainedModel.__init__(self, config)
-        self.model = LlamaBiModel(config)  # Initially, LlamaModel
+        LlamaPreTrainedModel.__init__(self, config) # Initially, super().__init__(config)
+        self.model = LlamaBiModel(config)  # Initially, LlamaModel(config)
         self.vocab_size = config.vocab_size
         self.lm_head = nn.Linear(config.hidden_size, config.vocab_size, bias=False)
 
         self.post_init()
 ```
 
-Text about forward function and write about passing shifted tokens as labels:
+We can now use this model for training with masked next token prediction. 
+
+In our work, predicting a masked token at position $i$, we compute the loss based on the logits obtained from the token representation at the previous position $i-1$. This shifting is automatically handled by the forward function of `LlamaForCausalLM` as similar shifting is required in the next token prediction task. 
+
+For training, we adapt the huggingface example script for masked language modeling  - [examples/pytorch/language-modeling/run_mlm.py](https://github.com/huggingface/transformers/blob/v4.39.3/examples/pytorch/language-modeling/run_mlm.py). The only change required is to define a mask token, as decoder-only models do not have a mask token by default. We can use the padding token as the mask token. In our work we used underscore `_` as the mask token.
+
 ```python
-def forward(
-        self,
-        input_ids: torch.LongTensor = None,
-        attention_mask: Optional[torch.Tensor] = None,
-        position_ids: Optional[torch.LongTensor] = None,
-        past_key_values: Optional[List[torch.FloatTensor]] = None,
-        inputs_embeds: Optional[torch.FloatTensor] = None,
-        labels: Optional[torch.LongTensor] = None,
-        use_cache: Optional[bool] = None,
-        output_attentions: Optional[bool] = None,
-        output_hidden_states: Optional[bool] = None,
-        return_dict: Optional[bool] = None,
-    ) -> Union[Tuple, CausalLMOutputWithPast]:
-        output_attentions = output_attentions if output_attentions is not None else self.config.output_attentions
-        output_hidden_states = (
-            output_hidden_states if output_hidden_states is not None else self.config.output_hidden_states
-        )
-        return_dict = return_dict if return_dict is not None else self.config.use_return_dict
-
-        outputs = self.model(
-            input_ids=input_ids,
-            attention_mask=attention_mask,
-            position_ids=position_ids,
-            past_key_values=past_key_values,
-            inputs_embeds=inputs_embeds,
-            use_cache=use_cache,
-            output_attentions=output_attentions,
-            output_hidden_states=output_hidden_states,
-            return_dict=return_dict,
-        )
-
-        hidden_states = outputs[0]
-        if self.config.pretraining_tp > 1:
-            lm_head_slices = self.lm_head.weight.split(self.vocab_size // self.config.pretraining_tp, dim=0)
-            logits = [F.linear(hidden_states, lm_head_slices[i]) for i in range(self.config.pretraining_tp)]
-            logits = torch.cat(logits, dim=-1)
-        else:
-            logits = self.lm_head(hidden_states)
-        logits = logits.float()
-
-        masked_lm_loss = None
-        if labels is not None:
-            labels = labels.to(logits.device)
-            loss_fct = CrossEntropyLoss()
-            masked_lm_loss = loss_fct(logits.view(-1, self.config.vocab_size), labels.view(-1))
-
-        if not return_dict:
-            output = (logits,) + outputs[1:]
-            return (masked_lm_loss,) + output if masked_lm_loss is not None else output
-
-        return MaskedLMOutput(
-            loss=masked_lm_loss,
-            logits=logits,
-            hidden_states=outputs.hidden_states,
-            attentions=outputs.attentions,
-        )
+tokenizer.mask_token = "_"
 ```
 
-<!-- talk about label shifting -->
 
 <!-- point to other resources for simcse and supervised training, as well as pointer to our code -->
