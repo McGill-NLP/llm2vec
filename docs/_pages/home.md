@@ -2,7 +2,8 @@
 permalink: /
 layout: splash
 header:
-    overlay_color: rgb(237, 27, 47)
+    # overlay_color: rgb(237, 27, 47)
+    overlay_color: rgb(180, 27, 47)
     actions:
         - label: "Paper"
           url: https://arxiv.org
@@ -13,6 +14,9 @@ header:
         - label: "Tutorial"
           url: "https://mcgill-nlp.github.io/llm2vec/tutorial"
           icon: "fas fa-laptop"
+        - label: "Models"
+          url: "https://huggingface.co/collections/McGill-NLP/llm2vec-660e14f536b3c8d10b3f1c34"
+          icon: "fas fa-robot"
 
 title: "LLM2Vec: Large Language Models Are Secretly Powerful Text Encoders"
 excerpt: Parishad BehnamGhader\*, Vaibhav Adlakha\*, Marius Mosbach, Dzmitry Bahdanau, Nicolas Chapados, Siva Reddy
