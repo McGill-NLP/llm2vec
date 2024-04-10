@@ -6,7 +6,7 @@ header:
     overlay_color: rgb(180, 27, 47)
     actions:
         - label: "Paper"
-          url: https://arxiv.org
+          url: "https://arxiv.org/abs/2404.05961"
           icon: "fas fa-book"
         - label: "Blog"
           url: "https://www.servicenow.com/blogs/2024/llm2vec-large-language-models.html"
