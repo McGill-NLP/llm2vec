@@ -1,6 +1,7 @@
 # *LLM2Vec: Large Language Models Are Secretly Powerful Text Encoders* 
 
 Paper - [https://arxiv.org/abs/2404.05961](https://arxiv.org/abs/2404.05961)
+
 LLM2Vec is a simple recipe to convert decoder-only LLMs into text encoders. It consists of 3 simple steps: 1) enabling bidirectional attention, 2) training with masked next token prediction, and 3) unsupervised contrastive learning. The model can be further fine-tuned to achieve state-of-the-art performance.
 
 <p align="center">
