@@ -43,6 +43,18 @@ class LLM2Vec(nn.Module):
         self.max_length = max_length
         self.doc_max_length = doc_max_length
 
+    @classmethod
+    def from_pretrained(cls, model_name_or_path, trust_remote_code=True, **kwargs):
+        tokenizer = AutoTokenizer.from_pretrained(model_name_or_path)
+        model = AutoModel.from_pretrained(
+            model_name_or_path, trust_remote_code=trust_remote_code
+        )
+        if os.path.exists(f"{model_name_or_path}/llm2vec_config.json"):
+            with open(f"{model_name_or_path}/llm2vec_config.json", "r") as fIn:
+                llm2vec_config = json.load(fIn)
+            kwargs.update(llm2vec_config)
+        return cls(model=model, tokenizer=tokenizer, **kwargs)
+
     def prepare_for_tokenization(self, text):
         def _is_instruct(name):
             return (
@@ -259,7 +271,7 @@ class LLM2Vec(nn.Module):
     def save(self, output_path, merge_before_save=False, save_config=True):
         if merge_before_save and isinstance(self.model, PeftModel):
             self.model = self.model.merge_and_unload()
-            # if has _hf_peft_config_loaded attribute, set to False
+            # Fixes the issue of saving - https://huggingface.co/McGill-NLP/LLM2Vec-Mistral-7B-Instruct-v2-mntp-unsup-simcse/discussions/1
             if hasattr(self.model, "_hf_peft_config_loaded"):
                 self.model._hf_peft_config_loaded = False
 
