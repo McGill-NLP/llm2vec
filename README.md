@@ -132,5 +132,17 @@ tensor([[0.5485, 0.0551],
 ## Training 
 Training code will be available soon.
 
+## Citation
+If you find our work helpful, please cite us:
+```bibtex
+@article{llm2vec,
+      title={{LLM2Vec}: {L}arge Language Models Are Secretly Powerful Text Encoders}, 
+      author={Parishad BehnamGhader and Vaibhav Adlakha and Marius Mosbach and Dzmitry Bahdanau and Nicolas Chapados and Siva Reddy},
+      year={2024},
+      journal={arXiv preprint},
+      url={https://arxiv.org/abs/2404.05961}
+}
+```
+
 ## Bugs or questions?
 If you have any questions about the code, feel free to open an issue on the GitHub repository.
