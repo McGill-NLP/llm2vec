@@ -258,10 +258,10 @@ class LLM2Vec(nn.Module):
 
     def save(self, output_path, merge_before_save=False, save_config=True):
         if merge_before_save and isinstance(self.model, PeftModel):
-            model = model.merge_and_unload()
+            self.model = self.model.merge_and_unload()
             # if has _hf_peft_config_loaded attribute, set to False
-            if hasattr(model, "_hf_peft_config_loaded"):
-                model._hf_peft_config_loaded = False
+            if hasattr(self.model, "_hf_peft_config_loaded"):
+                self.model._hf_peft_config_loaded = False
 
         self.model.save_pretrained(output_path)
         self.tokenizer.save_pretrained(output_path)
