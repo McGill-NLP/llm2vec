@@ -49,11 +49,15 @@ class LLM2Vec(nn.Module):
         model = AutoModel.from_pretrained(
             model_name_or_path, trust_remote_code=trust_remote_code
         )
+        config = {}
         if os.path.exists(f"{model_name_or_path}/llm2vec_config.json"):
             with open(f"{model_name_or_path}/llm2vec_config.json", "r") as fIn:
                 llm2vec_config = json.load(fIn)
-            kwargs.update(llm2vec_config)
-        return cls(model=model, tokenizer=tokenizer, **kwargs)
+            config.update(llm2vec_config)
+        
+        for key, value in kwargs.items():
+            config[key] = value
+        return cls(model=model, tokenizer=tokenizer, **config)
 
     def prepare_for_tokenization(self, text):
         def _is_instruct(name):
