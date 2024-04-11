@@ -128,4 +128,4 @@ tensor([[0.5485, 0.0551],
 Training code will be available soon.
 
 # Bugs or questions?
-If you have any question about the code, feel free to email Parishad (`parishad.behnamghader@mila.quebec`) and Vaibhav (`vaibhav.adlakha@mila.quebec`).
+If you have any questions about the code, feel free to open an issue on the GitHub repository.
