@@ -1,3 +1,5 @@
+import json
+import os
 import logging
 from functools import partial
 import numpy as np
@@ -7,6 +9,7 @@ import torch.multiprocessing as mp
 from typing import Dict, List, Union, Optional
 from tqdm.autonotebook import trange
 from transformers import AutoModel, AutoTokenizer, LlamaConfig, MistralConfig
+from peft import PeftModel
 
 logger = logging.getLogger(__name__)
 
@@ -179,9 +182,28 @@ class LLM2Vec(nn.Module):
             all_embeddings = np.asarray([emb.numpy() for emb in all_embeddings])
         return all_embeddings
 
-    def save(self, output_path):
+    def save(self, output_path, merge_before_save=False, save_config=True):
+
+        if merge_before_save and isinstance(self.model, PeftModel):
+            model = model.merge_and_unload()
+            # if has _hf_peft_config_loaded attribute, set to False
+            if hasattr(model, "_hf_peft_config_loaded"):
+                model._hf_peft_config_loaded = False
+
         self.model.save_pretrained(output_path)
         self.tokenizer.save_pretrained(output_path)
+
+        llm2vec_config = {
+            "pooling_mode": self.pooling_mode,
+            "max_length": self.max_length,
+            "doc_max_length": self.doc_max_length,
+            "skip_instruction": self.skip_instruction
+        }
+
+        if save_config:
+            os.path.makedirs(output_path, exist_ok=True)
+            with open(f"{output_path}/llm2vec_config.json", "w") as fOut:
+                json.dump(llm2vec_config, fOut, indent=4)
 
     def _encode(self, sentences_batch, device, convert_to_numpy, multiprocessing=False):
 
