@@ -274,7 +274,7 @@ class LLM2Vec(nn.Module):
         }
 
         if save_config:
-            os.path.makedirs(output_path, exist_ok=True)
+            os.makedirs(output_path, exist_ok=True)
             with open(f"{output_path}/llm2vec_config.json", "w") as fOut:
                 json.dump(llm2vec_config, fOut, indent=4)
 
