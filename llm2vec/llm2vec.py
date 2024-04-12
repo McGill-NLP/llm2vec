@@ -10,7 +10,15 @@ import torch.multiprocessing as mp
 from peft import PeftModel
 from torch import Tensor, device, nn
 from tqdm.autonotebook import trange
-from transformers import AutoModel, AutoConfig, AutoTokenizer, LlamaConfig, MistralConfig
+from transformers import (
+    AutoModel,
+    AutoConfig,
+    AutoTokenizer,
+    LlamaConfig,
+    MistralConfig,
+)
+
+from .models import MistralEncoderModel, MistralEncoderForMaskedLM
 
 logger = logging.getLogger(__name__)
 
@@ -44,27 +52,69 @@ class LLM2Vec(nn.Module):
         self.doc_max_length = doc_max_length
 
     @classmethod
-    def from_pretrained(cls, base_model_name_or_path, peft_model_name_or_path=None, **kwargs):
+    def _get_model_class(cls, config_class_name, load_mntp_class=False):
+        if config_class_name == "MistralConfig":
+            if load_mntp_class:
+                return MistralEncoderForMaskedLM
+            return MistralEncoderModel
+        else:
+            raise ValueError(f"{config_class_name} is not supported yet.")
+
+    @classmethod
+    def from_pretrained(
+        cls,
+        base_model_name_or_path,
+        peft_model_name_or_path=None,
+        load_for_mntp_training=False,
+        **kwargs,
+    ):
         tokenizer = AutoTokenizer.from_pretrained(base_model_name_or_path)
-        # TODO: Map to respective bi model class
-        model = AutoModel.from_pretrained(
-            base_model_name_or_path
+        tokenizer.pad_token = tokenizer.eos_token
+        tokenizer.padding_side = "left"
+
+        config = AutoConfig.from_pretrained(base_model_name_or_path)
+        config_class_name = config.__class__.__name__
+
+        model_class = cls._get_model_class(
+            config_class_name, load_mntp_class=load_for_mntp_training
         )
-        # TODO: If peft modules present, merge and unload
+        device_map = kwargs.pop("device_map", None)
+        torch_dtype = kwargs.pop("torch_dtype", None)
+        model_kwargs = {}
+        if device_map is not None:
+            model_kwargs["device_map"] = device_map
+        if torch_dtype is not None:
+            model_kwargs["torch_dtype"] = torch_dtype
+        model = model_class.from_pretrained(base_model_name_or_path, **model_kwargs)
+
+        # For special case where config.json and adapter weights are in the same directory
+        if hasattr(model, "peft_config"):
+            model = PeftModel.from_pretrained(
+                model,
+                base_model_name_or_path,
+            )
+            model = model.merge_and_unload()
+
         if peft_model_name_or_path is not None:
             model = PeftModel.from_pretrained(
                 model,
                 peft_model_name_or_path,
             )
+
         config = {}
-        config_addr = peft_model_name_or_path if peft_model_name_or_path is not None else base_model_name_or_path
+        config_addr = (
+            peft_model_name_or_path
+            if peft_model_name_or_path is not None
+            else base_model_name_or_path
+        )
         if os.path.exists(f"{config_addr}/llm2vec_config.json"):
             with open(f"{config_addr}/llm2vec_config.json", "r") as fIn:
                 llm2vec_config = json.load(fIn)
             config.update(llm2vec_config)
-        
+
         for key, value in kwargs.items():
             config[key] = value
+
         return cls(model=model, tokenizer=tokenizer, **config)
 
     def prepare_for_tokenization(self, text):

@@ -22,7 +22,7 @@ setup(
         "tqdm",
         "torch",
         "peft",
-        "transformers>=4.38.1"
+        "transformers>=4.39.1"
     ],
     classifiers=[
         "Programming Language :: Python :: 3",
