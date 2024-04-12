@@ -10,7 +10,7 @@ import torch.multiprocessing as mp
 from peft import PeftModel
 from torch import Tensor, device, nn
 from tqdm.autonotebook import trange
-from transformers import AutoModel, AutoTokenizer, LlamaConfig, MistralConfig
+from transformers import AutoModel, AutoConfig, AutoTokenizer, LlamaConfig, MistralConfig
 
 logger = logging.getLogger(__name__)
 
@@ -44,14 +44,22 @@ class LLM2Vec(nn.Module):
         self.doc_max_length = doc_max_length
 
     @classmethod
-    def from_pretrained(cls, model_name_or_path, trust_remote_code=True, **kwargs):
-        tokenizer = AutoTokenizer.from_pretrained(model_name_or_path)
+    def from_pretrained(cls, base_model_name_or_path, peft_model_name_or_path=None, **kwargs):
+        tokenizer = AutoTokenizer.from_pretrained(base_model_name_or_path)
+        # TODO: Map to respective bi model class
         model = AutoModel.from_pretrained(
-            model_name_or_path, trust_remote_code=trust_remote_code
+            base_model_name_or_path
         )
+        # TODO: If peft modules present, merge and unload
+        if peft_model_name_or_path is not None:
+            model = PeftModel.from_pretrained(
+                model,
+                peft_model_name_or_path,
+            )
         config = {}
-        if os.path.exists(f"{model_name_or_path}/llm2vec_config.json"):
-            with open(f"{model_name_or_path}/llm2vec_config.json", "r") as fIn:
+        config_addr = peft_model_name_or_path if peft_model_name_or_path is not None else base_model_name_or_path
+        if os.path.exists(f"{config_addr}/llm2vec_config.json"):
+            with open(f"{config_addr}/llm2vec_config.json", "r") as fIn:
                 llm2vec_config = json.load(fIn)
             config.update(llm2vec_config)
         
