@@ -38,8 +38,6 @@ import torch
 from transformers import AutoTokenizer, AutoModel, AutoConfig
 from peft import PeftModel
 
-config = AutoConfig.from_pretrained("McGill-NLP/LLM2Vec-Sheared-LLaMA-mntp", trust_remote_code=True)
-tokenizer = AutoTokenizer.from_pretrained("McGill-NLP/LLM2Vec-Sheared-LLaMA-mntp")
 
 # Loading base MNTP model, along with custom code that enables bidirectional connections in decoder-only LLMs
 tokenizer = AutoTokenizer.from_pretrained(
