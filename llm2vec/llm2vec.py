@@ -72,6 +72,10 @@ class LLM2Vec(nn.Module):
         load_for_mntp_training=False,
         **kwargs,
     ):
+        # pop out encoder args
+        keys = ["pooling_mode", "max_length", "doc_max_length", "skip_instruction"]
+        encoder_args = {key: kwargs.pop(key, None) for key in keys if kwargs.get(key) is not None}
+
         tokenizer = AutoTokenizer.from_pretrained(base_model_name_or_path)
         tokenizer.pad_token = tokenizer.eos_token
         tokenizer.padding_side = "left"
@@ -82,14 +86,7 @@ class LLM2Vec(nn.Module):
         model_class = cls._get_model_class(
             config_class_name, load_mntp_class=load_for_mntp_training
         )
-        device_map = kwargs.pop("device_map", None)
-        torch_dtype = kwargs.pop("torch_dtype", None)
-        model_kwargs = {}
-        if device_map is not None:
-            model_kwargs["device_map"] = device_map
-        if torch_dtype is not None:
-            model_kwargs["torch_dtype"] = torch_dtype
-        model = model_class.from_pretrained(base_model_name_or_path, **model_kwargs)
+        model = model_class.from_pretrained(base_model_name_or_path, **kwargs)
 
         # For special case where config.json and adapter weights are in the same directory
         if hasattr(model, "peft_config"):
@@ -116,7 +113,7 @@ class LLM2Vec(nn.Module):
                 llm2vec_config = json.load(fIn)
             config.update(llm2vec_config)
 
-        for key, value in kwargs.items():
+        for key, value in encoder_args.items():
             config[key] = value
 
         return cls(model=model, tokenizer=tokenizer, **config)
