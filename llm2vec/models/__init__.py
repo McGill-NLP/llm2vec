@@ -1,1 +1,2 @@
 from .bidirectional_mistral import MistralEncoderModel, MistralEncoderForMaskedLM
+from .bidirectional_llama import LlamaEncoderModel, LlamaEncoderForMaskedLM
