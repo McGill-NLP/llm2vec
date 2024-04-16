@@ -22,7 +22,11 @@ setup(
         "tqdm",
         "torch",
         "peft",
-        "transformers>=4.39.1"
+        "transformers>=4.39.1",
+        "flash-attn>=2.5.3",
+        "datasets",
+        "evaluate",
+        "scikit-learn"
     ],
     classifiers=[
         "Programming Language :: Python :: 3",
