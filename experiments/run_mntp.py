@@ -28,7 +28,6 @@ from typing import Optional, Any, Tuple, List
 import numpy as np
 
 import datasets
-datasets.builder.has_sufficient_disk_space = lambda needed_bytes, directory='.': True
 import evaluate
 from datasets import load_dataset
 
