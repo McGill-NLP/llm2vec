@@ -18,7 +18,12 @@ from transformers import (
     MistralConfig,
 )
 
-from .models import MistralEncoderModel, MistralEncoderForMaskedLM, LlamaEncoderModel, LlamaEncoderForMaskedLM
+from .models import (
+    MistralEncoderModel,
+    MistralEncoderForMaskedLM,
+    LlamaEncoderModel,
+    LlamaEncoderForMaskedLM,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -74,7 +79,9 @@ class LLM2Vec(nn.Module):
     ):
         # pop out encoder args
         keys = ["pooling_mode", "max_length", "doc_max_length", "skip_instruction"]
-        encoder_args = {key: kwargs.pop(key, None) for key in keys if kwargs.get(key) is not None}
+        encoder_args = {
+            key: kwargs.pop(key, None) for key in keys if kwargs.get(key) is not None
+        }
 
         tokenizer = AutoTokenizer.from_pretrained(base_model_name_or_path)
         tokenizer.pad_token = tokenizer.eos_token

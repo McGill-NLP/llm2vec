@@ -2,6 +2,7 @@ from typing import List, Optional, Tuple, Union
 import torch
 from transformers.modeling_attn_mask_utils import AttentionMaskConverter
 
+
 def _prepare_4d_causal_attention_mask(
     attention_mask: Optional[torch.Tensor],
     input_shape: Union[torch.Size, Tuple, List],
@@ -25,14 +26,19 @@ def _prepare_4d_causal_attention_mask(
         sliding_window (`int`, *optional*):
             If the model uses windowed attention, a sliding window should be passed.
     """
-    attn_mask_converter = AttentionMaskConverter(is_causal=False, sliding_window=sliding_window) # is_causal=True in original implementation
+    attn_mask_converter = AttentionMaskConverter(
+        is_causal=False, sliding_window=sliding_window
+    )  # is_causal=True in original implementation
 
     key_value_length = input_shape[-1] + past_key_values_length
 
     # 4d mask is passed through the layers
     if attention_mask is not None and len(attention_mask.shape) == 2:
         attention_mask = attn_mask_converter.to_4d(
-            attention_mask, input_shape[-1], key_value_length=key_value_length, dtype=inputs_embeds.dtype
+            attention_mask,
+            input_shape[-1],
+            key_value_length=key_value_length,
+            dtype=inputs_embeds.dtype,
         )
     elif attention_mask is not None and len(attention_mask.shape) == 4:
         expected_shape = (input_shape[0], 1, input_shape[1], key_value_length)
@@ -48,7 +54,11 @@ def _prepare_4d_causal_attention_mask(
             )
     else:
         attention_mask = attn_mask_converter.to_causal_4d(
-            input_shape[0], input_shape[-1], key_value_length, dtype=inputs_embeds.dtype, device=inputs_embeds.device
+            input_shape[0],
+            input_shape[-1],
+            key_value_length,
+            dtype=inputs_embeds.dtype,
+            device=inputs_embeds.device,
         )
 
     return attention_mask
@@ -69,7 +79,9 @@ def _prepare_4d_causal_attention_mask_for_sdpa(
     `key_value_length == query_length`, and rely instead on SDPA `is_causal` argument to use causal/non-causal masks,
     allowing to dispatch to the flash attention kernel (that can otherwise not be used if a custom `attn_mask` is passed).
     """
-    attn_mask_converter = AttentionMaskConverter(is_causal=False, sliding_window=sliding_window) # is_causal=True in original implementation
+    attn_mask_converter = AttentionMaskConverter(
+        is_causal=False, sliding_window=sliding_window
+    )  # is_causal=True in original implementation
 
     key_value_length = input_shape[-1] + past_key_values_length
     batch_size, query_length = input_shape
@@ -123,7 +135,11 @@ def _prepare_4d_causal_attention_mask_for_sdpa(
         expanded_4d_mask = None
     elif attention_mask is True:
         expanded_4d_mask = attn_mask_converter.to_causal_4d(
-            input_shape[0], input_shape[-1], key_value_length, dtype=inputs_embeds.dtype, device=inputs_embeds.device
+            input_shape[0],
+            input_shape[-1],
+            key_value_length,
+            dtype=inputs_embeds.dtype,
+            device=inputs_embeds.device,
         )
     else:
         expanded_4d_mask = attn_mask_converter.to_4d(
