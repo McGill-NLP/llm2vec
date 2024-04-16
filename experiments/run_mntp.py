@@ -203,6 +203,25 @@ class ModelArguments:
             )
         },
     )
+    torch_dtype: Optional[str] = field(
+        default=None,
+        metadata={
+            "help": (
+                "Override the default `torch.dtype` and load the model under this dtype. If `auto` is passed, the "
+                "dtype will be automatically derived from the model's weights."
+            ),
+            "choices": ["auto", "bfloat16", "float16", "float32"],
+        },
+    )
+    attn_implementation: Optional[str] = field(
+        default="sdpa",
+        metadata={
+            "help": (
+                "The attention implementation to use in the model."
+            ),
+            "choices": ["eager", "sdpa", "flash_attention_2"],
+        },
+    )
     low_cpu_mem_usage: bool = field(
         default=False,
         metadata={
@@ -742,6 +761,11 @@ def main():
 
     # Loading bidirectional model using LLM2Vec package
     model_class = get_model_class(config)
+    torch_dtype = (
+        model_args.torch_dtype
+        if model_args.torch_dtype in ["auto", None]
+        else getattr(torch, model_args.torch_dtype)
+    )
     model = model_class.from_pretrained(
         model_args.model_name_or_path,
         from_tf=bool(".ckpt" in model_args.model_name_or_path),
@@ -750,7 +774,9 @@ def main():
         revision=model_args.model_revision,
         token=model_args.token,
         trust_remote_code=model_args.trust_remote_code,
+        torch_dtype=torch_dtype,
         low_cpu_mem_usage=model_args.low_cpu_mem_usage,
+        attn_implementation=model_args.attn_implementation,
     )
     model = initialize_peft(
         model,

@@ -18,5 +18,7 @@
     "evaluation_strategy": "steps",
     "eval_steps": 100,
     "stop_after_n_steps": 1000,
-    "gradient_checkpointing": true
+    "gradient_checkpointing": true,
+    "torch_dtype": "bfloat16",
+    "attn_implementation": "flash_attention_2"
 }
