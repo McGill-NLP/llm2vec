@@ -71,8 +71,14 @@ MODEL_CONFIG_CLASSES = list(MODEL_FOR_MASKED_LM_MAPPING.keys())
 MODEL_TYPES = tuple(conf.model_type for conf in MODEL_CONFIG_CLASSES)
 
 
-def initialize_main_model(config):
-    
+def get_model_class(config):
+    config_class_name = config.__class__.__name__
+    if config_class_name == "MistralConfig":
+        return MistralBiForMNTP
+    elif config_class_name == "LlamaConfig":
+        return LlamaBiForMNTP
+    else:
+        raise ValueError(f"Model class {config_class_name} not supported.")
 
 
 def initialize_peft(
@@ -735,7 +741,7 @@ def main():
         tokenizer.pad_token = tokenizer.eos_token
 
     # Loading bidirectional model using LLM2Vec package
-    model_class = LLM2Vec.get_model_class(config.__class__.__name__)
+    model_class = get_model_class(config)
     model = model_class.from_pretrained(
         model_args.model_name_or_path,
         from_tf=bool(".ckpt" in model_args.model_name_or_path),
