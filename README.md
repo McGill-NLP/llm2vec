@@ -29,56 +29,37 @@ pip install -e .
 LLM2Vec class is a wrapper on top of HuggingFace models to support sequence encoding and pooling operations. The steps below showcase an example on how to use the library.
 
 ### Preparing the model
-Here, we first initialize the model and apply MNTP-trained LoRA weights on top. After merging the model with MNTP weights, we can
-- either load the unsupervised-trained LoRA weights (trained with SimCSE objective and wiki corpus)
-- or we can load the model with supervised-trained LoRA weights (trained with contrastive learning and public E5 data).
+Initializing LLM2Vec model using pretrained LLMs is straightforward. The `from_pretrained` method of LLM2Vec takes a base model identifier/path and an optional PEFT model identifier/path. All HuggingFace model loading arguments can be passed to `from_pretrained` method (make sure the `llm2vec` package version is `>=0.1.3`).
+
+Here, we first initialize the Mistral MNTP base model and load the unsupervised-trained LoRA weights (trained with SimCSE objective and wiki corpus).
 
 ```python
 import torch
-from transformers import AutoTokenizer, AutoModel, AutoConfig
-from peft import PeftModel
-
-
-# Loading base MNTP model, along with custom code that enables bidirectional connections in decoder-only LLMs
-tokenizer = AutoTokenizer.from_pretrained(
-    "McGill-NLP/LLM2Vec-Mistral-7B-Instruct-v2-mntp"
-)
-config = AutoConfig.from_pretrained(
-    "McGill-NLP/LLM2Vec-Mistral-7B-Instruct-v2-mntp", trust_remote_code=True
-)
-model = AutoModel.from_pretrained(
-    "McGill-NLP/LLM2Vec-Mistral-7B-Instruct-v2-mntp",
-    trust_remote_code=True,
-    config=config,
-    torch_dtype=torch.bfloat16,
-    device_map="cuda" if torch.cuda.is_available() else "cpu",
-)
-model = PeftModel.from_pretrained(
-    model,
-    "McGill-NLP/LLM2Vec-Mistral-7B-Instruct-v2-mntp",
-)
-model = model.merge_and_unload()  # This can take several minutes on cpu
-
-# Loading unsupervised-trained LoRA weights. This loads the trained LoRA weights on top of MNTP model. Hence the final weights are -- Base model + MNTP (LoRA) + SimCSE (LoRA).
-model = PeftModel.from_pretrained(
-    model, "McGill-NLP/LLM2Vec-Mistral-7B-Instruct-v2-mntp-unsup-simcse"
-)
-
-# Or loading supervised-trained LoRA weights
-model = PeftModel.from_pretrained(
-    model, "McGill-NLP/LLM2Vec-Mistral-7B-Instruct-v2-mntp-supervised"
-)
-
-```
-
-### Applying `LLM2Vec` wrapper
-Then, we define our LLM2Vec encoder model as follows:
-
-```python
 from llm2vec import LLM2Vec
 
-l2v = LLM2Vec(model, tokenizer, pooling_mode="mean", max_length=512)
+l2v = LLM2Vec.from_pretrained(
+    "McGill-NLP/LLM2Vec-Mistral-7B-Instruct-v2-mntp",
+    peft_model_name_or_path="McGill-NLP/LLM2Vec-Mistral-7B-Instruct-v2-mntp-unsup-simcse",
+    device_map="cuda" if torch.cuda.is_available() else "cpu",
+    torch_dtype=torch.bfloat16,
+)
 ```
+
+We can also load the model with supervised-trained LoRA weights (trained with contrastive learning and public E5 data) by changing the `peft_model_name_or_path`.
+
+```python
+import torch
+from llm2vec import LLM2Vec
+
+l2v = LLM2Vec.from_pretrained(
+    "McGill-NLP/LLM2Vec-Mistral-7B-Instruct-v2-mntp",
+    peft_model_name_or_path="McGill-NLP/LLM2Vec-Mistral-7B-Instruct-v2-mntp-supervised",
+    device_map="cuda" if torch.cuda.is_available() else "cpu",
+    torch_dtype=torch.bfloat16,
+)
+```
+
+By default the LLM2Vec model uses the `mean` pooling strategy. You can change the pooling strategy by passing the `pooling_mode` argument to the `from_pretrained` method. Similarly, you can change the maximum sequence length by passing the `max_length` argument (default is 512).
 
 ### Inference
 This model now returns the text embedding for any input in the form of `[[instruction1, text1], [instruction2, text2]]` or `[text1, text2]`. While training, we provide instructions for both sentences in symmetric tasks, and only for for queries in asymmetric tasks.
