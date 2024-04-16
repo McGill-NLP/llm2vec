@@ -1,2 +1,2 @@
-from .bidirectional_mistral import MistralEncoderModel, MistralEncoderForMaskedLM
-from .bidirectional_llama import LlamaEncoderModel, LlamaEncoderForMaskedLM
+from .bidirectional_mistral import MistralBiModel, MistralBiForMNTP
+from .bidirectional_llama import LlamaBiModel, LlamaBiForMNTP

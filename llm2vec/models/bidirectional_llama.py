@@ -72,7 +72,7 @@ class ModifiedLlamaDecoderLayer(LlamaDecoderLayer):
         )
 
 
-class LlamaEncoderModel(LlamaModel):
+class LlamaBiModel(LlamaModel):
     def __init__(self, config: LlamaConfig):
         if not is_transformers_attn_greater_or_equal_4_38():
             raise ValueError(
@@ -179,10 +179,10 @@ class LlamaEncoderModel(LlamaModel):
         return causal_mask
 
 
-class LlamaEncoderForMaskedLM(LlamaForCausalLM):
+class LlamaBiForMNTP(LlamaForCausalLM):
     def __init__(self, config):
         LlamaPreTrainedModel.__init__(self, config)
-        self.model = LlamaEncoderModel(config)
+        self.model = LlamaBiModel(config)
         self.vocab_size = config.vocab_size
         self.lm_head = nn.Linear(config.hidden_size, config.vocab_size, bias=False)
 

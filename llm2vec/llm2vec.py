@@ -19,10 +19,10 @@ from transformers import (
 )
 
 from .models import (
-    MistralEncoderModel,
-    MistralEncoderForMaskedLM,
-    LlamaEncoderModel,
-    LlamaEncoderForMaskedLM,
+    MistralBiModel,
+    MistralBiForMNTP,
+    LlamaBiModel,
+    LlamaBiForMNTP,
 )
 
 logger = logging.getLogger(__name__)
@@ -60,12 +60,12 @@ class LLM2Vec(nn.Module):
     def _get_model_class(cls, config_class_name, load_mntp_class=False):
         if config_class_name == "MistralConfig":
             if load_mntp_class:
-                return MistralEncoderForMaskedLM
-            return MistralEncoderModel
+                return MistralBiForMNTP
+            return MistralBiModel
         elif config_class_name == "LlamaConfig":
             if load_mntp_class:
-                return LlamaEncoderForMaskedLM
-            return LlamaEncoderModel
+                return LlamaBiForMNTP
+            return LlamaBiModel
         else:
             raise ValueError(f"{config_class_name} is not supported yet.")
 

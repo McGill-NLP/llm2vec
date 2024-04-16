@@ -70,7 +70,7 @@ class ModifiedMistralDecoderLayer(MistralDecoderLayer):
         )
 
 
-class MistralEncoderModel(MistralModel):
+class MistralBiModel(MistralModel):
     def __init__(self, config: MistralConfig):
         MistralPreTrainedModel.__init__(self, config)
         self.padding_idx = config.pad_token_id
@@ -270,10 +270,10 @@ class MistralEncoderModel(MistralModel):
         )
 
 
-class MistralEncoderForMaskedLM(MistralForCausalLM):
+class MistralBiForMNTP(MistralForCausalLM):
     def __init__(self, config):
         MistralPreTrainedModel.__init__(self, config)
-        self.model = MistralEncoderModel(config)
+        self.model = MistralBiModel(config)
         self.vocab_size = config.vocab_size
         self.lm_head = nn.Linear(config.hidden_size, config.vocab_size, bias=False)
 
