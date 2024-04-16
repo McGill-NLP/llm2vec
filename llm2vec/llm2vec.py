@@ -20,9 +20,7 @@ from transformers import (
 
 from .models import (
     MistralBiModel,
-    MistralBiForMNTP,
     LlamaBiModel,
-    LlamaBiForMNTP,
 )
 
 logger = logging.getLogger(__name__)
@@ -57,14 +55,10 @@ class LLM2Vec(nn.Module):
         self.doc_max_length = doc_max_length
 
     @classmethod
-    def _get_model_class(cls, config_class_name, load_mntp_class=False):
+    def _get_model_class(cls, config_class_name):
         if config_class_name == "MistralConfig":
-            if load_mntp_class:
-                return MistralBiForMNTP
             return MistralBiModel
         elif config_class_name == "LlamaConfig":
-            if load_mntp_class:
-                return LlamaBiForMNTP
             return LlamaBiModel
         else:
             raise ValueError(f"{config_class_name} is not supported yet.")
@@ -74,7 +68,6 @@ class LLM2Vec(nn.Module):
         cls,
         base_model_name_or_path,
         peft_model_name_or_path=None,
-        load_for_mntp_training=False,
         **kwargs,
     ):
         # pop out encoder args
@@ -90,9 +83,7 @@ class LLM2Vec(nn.Module):
         config = AutoConfig.from_pretrained(base_model_name_or_path)
         config_class_name = config.__class__.__name__
 
-        model_class = cls._get_model_class(
-            config_class_name, load_mntp_class=load_for_mntp_training
-        )
+        model_class = cls._get_model_class(config_class_name)
         model = model_class.from_pretrained(base_model_name_or_path, **kwargs)
 
         # For special case where config.json and adapter weights are in the same directory
