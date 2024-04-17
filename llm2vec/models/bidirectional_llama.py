@@ -194,7 +194,7 @@ class LlamaBiForMNTP(LlamaForCausalLM):
     # getter for PEFT model
     def get_model_for_peft(self):
         return self.model
-    
+
     # setter for PEFT model
     def set_model_for_peft(self, model: PeftModel):
         self.model = model

@@ -26,14 +26,14 @@ setup(
         "flash-attn>=2.5.3",
         "datasets",
         "evaluate",
-        "scikit-learn"
+        "scikit-learn",
     ],
     classifiers=[
         "Programming Language :: Python :: 3",
         "Operating System :: OS Independent",
         "License :: OSI Approved :: MIT License",
     ],
-    license='MIT',
+    license="MIT",
     long_description=long_description,
     long_description_content_type="text/markdown",
     include_package_data=True,

@@ -214,9 +214,7 @@ class ModelArguments:
     attn_implementation: Optional[str] = field(
         default="sdpa",
         metadata={
-            "help": (
-                "The attention implementation to use in the model."
-            ),
+            "help": ("The attention implementation to use in the model."),
             "choices": ["eager", "sdpa", "flash_attention_2"],
         },
     )
@@ -384,7 +382,6 @@ class CustomArguments:
 
 
 class DataCollatorForLanguageModelingWithFullMasking(DataCollatorForLanguageModeling):
-
     def torch_mask_tokens(
         self,
         inputs: Any,

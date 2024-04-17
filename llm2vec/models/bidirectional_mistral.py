@@ -281,7 +281,7 @@ class MistralBiForMNTP(MistralForCausalLM):
 
         # Initialize weights and apply final processing
         self.post_init()
-    
+
     # getter for PEFT model
     def get_model_for_peft(self):
         return self.model
