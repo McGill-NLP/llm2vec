@@ -24,6 +24,8 @@ from .attn_mask_utils import (
     _prepare_4d_causal_attention_mask_for_sdpa,
 )
 
+from peft import PeftModel
+
 logger = logging.get_logger(__name__)
 
 
@@ -279,3 +281,15 @@ class MistralBiForMNTP(MistralForCausalLM):
 
         # Initialize weights and apply final processing
         self.post_init()
+
+    # getter for PEFT model
+    def get_model_for_peft(self):
+        return self.model
+
+    # setter for PEFT model
+    def set_model_for_peft(self, model: PeftModel):
+        self.model = model
+
+    # save the PEFT model
+    def save_peft_model(self, path):
+        self.model.save_pretrained(path)

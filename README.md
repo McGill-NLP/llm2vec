@@ -14,15 +14,17 @@ LLM2Vec is a simple recipe to convert decoder-only LLMs into text encoders. It c
 </p>
 
 ## Installation
-To use LLM2Vec, first install the llm2vec package from PyPI.
+To use LLM2Vec, first install the llm2vec package from PyPI, followed by installing flash-attention:
 
 ```bash
 pip install llm2vec
+pip install flash-attn --no-build-isolation
 ```
-You can also directly install it from our code by cloning the repository and: 
+You can also directly install the latest version of llm2vec by cloning the repository: 
 
 ```bash
 pip install -e .
+pip install flash-attn --no-build-isolation
 ```
 
 ## Getting Started
