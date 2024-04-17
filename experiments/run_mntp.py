@@ -52,9 +52,6 @@ from transformers.utils.versions import require_version
 
 from peft import LoraConfig, get_peft_model
 
-from safetensors import safe_open
-from safetensors.torch import save_file
-
 from llm2vec.models import MistralBiForMNTP, LlamaBiForMNTP
 
 # Will error if the minimal version of Transformers is not installed. Remove at your own risks.
@@ -387,33 +384,6 @@ class CustomArguments:
 
 
 class DataCollatorForLanguageModelingWithFullMasking(DataCollatorForLanguageModeling):
-    def tf_mask_tokens(
-        self,
-        inputs: Any,
-        vocab_size,
-        mask_token_id,
-        special_tokens_mask: Optional[Any] = None,
-    ) -> Tuple[Any, Any]:
-        """
-        Prepare masked tokens inputs/labels for masked language modeling: 100% MASK, 0% random, 0% original.
-        """
-        import tensorflow as tf
-
-        mask_token_id = tf.cast(mask_token_id, inputs.dtype)
-
-        input_shape = tf.shape(inputs)
-        # 1 for a special token, 0 for a normal token in the special tokens mask
-        # We sample a few tokens in each sequence for MLM training (with probability `self.mlm_probability`)
-        masked_indices = (
-            self.tf_bernoulli(input_shape, self.mlm_probability) & ~special_tokens_mask
-        )
-        # Replace unmasked indices with -100 in the labels since we only compute loss on masked tokens
-        labels = tf.where(masked_indices, inputs, -100)
-
-        # 100% of the time, we replace masked input tokens with tokenizer.mask_token ([MASK])
-        inputs = tf.where(masked_indices, mask_token_id, inputs)
-
-        return inputs, labels
 
     def torch_mask_tokens(
         self,
@@ -447,38 +417,6 @@ class DataCollatorForLanguageModelingWithFullMasking(DataCollatorForLanguageMode
         inputs[masked_indices] = self.tokenizer.convert_tokens_to_ids(
             self.tokenizer.mask_token
         )
-
-        return inputs, labels
-
-    def numpy_mask_tokens(
-        self, inputs: Any, special_tokens_mask: Optional[Any] = None
-    ) -> Tuple[Any, Any]:
-        """
-        Prepare masked tokens inputs/labels for masked language modeling: 100% MASK, 0% random, 0% original.
-        """
-        labels = np.copy(inputs)
-        # We sample a few tokens in each sequence for MLM training (with probability `self.mlm_probability`)
-        probability_matrix = np.full(labels.shape, self.mlm_probability)
-        if special_tokens_mask is None:
-            special_tokens_mask = [
-                self.tokenizer.get_special_tokens_mask(
-                    val, already_has_special_tokens=True
-                )
-                for val in labels.tolist()
-            ]
-            special_tokens_mask = np.array(special_tokens_mask, dtype=bool)
-        else:
-            special_tokens_mask = special_tokens_mask.astype(bool)
-
-        probability_matrix[special_tokens_mask] = 0
-        # Numpy doesn't have bernoulli, so we use a binomial with 1 trial
-        masked_indices = np.random.binomial(
-            1, probability_matrix, size=probability_matrix.shape
-        ).astype(bool)
-        labels[~masked_indices] = -100  # We only compute loss on masked tokens
-
-        # 100% of the time, we replace masked input tokens with tokenizer.mask_token ([MASK])
-        inputs[masked_indices] = self.tokenizer.mask_token_id
 
         return inputs, labels
 
