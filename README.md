@@ -111,7 +111,31 @@ tensor([[0.5485, 0.0551],
   - ### [Bi + MNTP + Supervised](https://huggingface.co/McGill-NLP/LLM2Vec-Sheared-LLaMA-mntp-supervised)
 
 ## Training 
-Training code will be available soon.
+### MNTP training
+To train the model with Masked Next Token Prediction (MNTP), you can use the `experiments/run_mntp.py` script. It is adapted from HuggingFace Masked Language Modeling (MLM) [script](https://github.com/huggingface/transformers/blob/51bcadc10a569847b93a30dbe3a077037ae63bad/examples/pytorch/language-modeling/run_mlm.py). To train the Mistral-7B model with MNTP, run the following command:
+
+```bash
+python experiments/run_mntp.py train_configs/mntp/Mistral.json
+```
+
+The training configuration file contains all the training hyperparameters and configurations used in our paper. 
+```json
+{
+    "model_name_or_path": "mistralai/Mistral-7B-Instruct-v0.2",
+    "dataset_name": "wikitext",
+    "dataset_config_name": "wikitext-103-raw-v1",
+    "mask_token_type": "blank",
+    "data_collator_type": "all_mask",
+    "mlm_probability": 0.8,
+    "lora_r": 16,
+    "gradient_checkpointing": true,
+    "torch_dtype": "bfloat16",
+    "attn_implementation": "flash_attention_2"
+    ....
+}
+```
+
+Similar configurations are also available for [Llama-2-7B](train_configs/mntp/Llama.json) and [Sheared-Llama-1.3B](train_configs/mntp/Sheared-Llama.json) models.
 
 ## Citation
 If you find our work helpful, please cite us:
