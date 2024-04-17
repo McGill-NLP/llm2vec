@@ -111,9 +111,11 @@ def initialize_peft(
         bias="none",
         task_type=None,
     )
-    model = get_peft_model(model, config)
+    # model organization is MODEL_TYPEBiForMNTP.model -> MODEL_TYPELBiModel, we have to apply PEFT to the inner model
+    peft_model = get_peft_model(model.get_model_for_peft(), config)
     print(f"Model's Lora trainable parameters:")
-    model.print_trainable_parameters()
+    peft_model.print_trainable_parameters()
+    model.set_model_for_peft(peft_model)
     return model
 
 
@@ -500,34 +502,16 @@ class MNTPTrainer(Trainer):
     ):
         return dataset
 
+    # We need a custom save function as we have to save the inner model
     def _save(self, output_dir: Optional[str] = None, state_dict=None):
         # If we are executing this function, we are the process zero, so we don't check for that.
         output_dir = output_dir if output_dir is not None else self.args.output_dir
         os.makedirs(output_dir, exist_ok=True)
         logger.info(f"Saving model checkpoint to {output_dir}")
 
-        self.model.save(output_dir)
-
-        """
-        if os.path.exists(os.path.join(output_dir, "adapter_model.safetensors")):
-            tensors = {}
-            with safe_open(os.path.join(output_dir, "adapter_model.safetensors"), framework="pt", device="cpu") as f:
-                for key in f.keys():
-                    tensors[key] = f.get_tensor(key)
-            
-            new_tensors = {}
-            for key in tensors:
-                if key.startswith("base_model.model.model"):
-                    new_key = 'base_model.model' + key.split("base_model.model.model")[1]
-                    new_tensors[new_key] = tensors[key]
-                elif key.startswith("base_model.model.transformer"):
-                    new_key = 'base_model.model' + key.split("base_model.model.transformer")[1]
-                    new_tensors[new_key] = tensors[key]
-                else:
-                    new_tensors[key] = tensors[key]
-            
-            save_file(new_tensors, os.path.join(output_dir, "adapter_model.safetensors"))
-        """
+        # model organization is MODEL_TYPEBiForMNTP.model -> MODEL_TYPELBiModel, we have to save the inner model, handled by save_peft_model function of the outer model
+        self.model.save_peft_model(output_dir)
+        self.tokenizer.save_pretrained(output_dir)
 
         # Good practice: save your training arguments together with the trained model
         torch.save(self.args, os.path.join(output_dir, "training_args.bin"))

@@ -19,6 +19,8 @@ from transformers.utils import logging
 from transformers.modeling_attn_mask_utils import AttentionMaskConverter
 from transformers.utils.import_utils import _is_package_available
 
+from peft import PeftModel
+
 logger = logging.get_logger(__name__)
 
 
@@ -188,3 +190,15 @@ class LlamaBiForMNTP(LlamaForCausalLM):
 
         # Initialize weights and apply final processing
         self.post_init()
+
+    # getter for PEFT model
+    def get_model_for_peft(self):
+        return self.model
+    
+    # setter for PEFT model
+    def set_model_for_peft(self, model: PeftModel):
+        self.model = model
+
+    # save the PEFT model
+    def save_peft_model(self, path):
+        self.model.save_pretrained(path)
