@@ -118,7 +118,7 @@ To train the model with Masked Next Token Prediction (MNTP), you can use the `ex
 python experiments/run_mntp.py train_configs/mntp/Mistral.json
 ```
 
-The training configuration file contains all the training hyperparameters and configurations used in our paper. 
+The Mistral training configuration [file](train_configs/mntp/Mistral.json) contains all the training hyperparameters and configurations used in our paper. 
 ```json
 {
     "model_name_or_path": "mistralai/Mistral-7B-Instruct-v0.2",
@@ -131,7 +131,7 @@ The training configuration file contains all the training hyperparameters and co
     "gradient_checkpointing": true,
     "torch_dtype": "bfloat16",
     "attn_implementation": "flash_attention_2"
-    ....
+    // ....
 }
 ```
 
