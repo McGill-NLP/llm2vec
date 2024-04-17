@@ -23,7 +23,6 @@ setup(
         "torch",
         "peft",
         "transformers>=4.39.1",
-        "flash-attn>=2.5.3",
         "datasets",
         "evaluate",
         "scikit-learn",
