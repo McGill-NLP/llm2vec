@@ -1,6 +1,5 @@
-from sklearn.metrics import accuracy_score, average_precision_score, f1_score
+from sklearn.metrics import accuracy_score, f1_score
 from sklearn.linear_model import LogisticRegression
-from transformers import AutoTokenizer
 import datasets
 import numpy as np
 
