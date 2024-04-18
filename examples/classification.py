@@ -10,7 +10,7 @@ from llm2vec import LLM2Vec
 dataset = "AmazonCounterfactualClassification"
 instruction = "Classify a given Amazon customer review text as either counterfactual or notcounterfactual: "
 
-dataset = datasets.load_dataset("mteb/amazon_counterfactual", "en", revision="e8379541af4e31359cca9fbcf4b00f2671dba205")
+dataset = datasets.load_dataset("mteb/amazon_counterfactual", "en")
 
 sentences_train, y_train = dataset["train"]["text"], dataset["train"]["label"]
 sentences_test, y_test = dataset["test"]["text"], dataset["test"]["label"]
