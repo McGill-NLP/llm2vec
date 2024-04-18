@@ -11,7 +11,7 @@ from llm2vec import LLM2Vec
 dataset = "mteb/twentynewsgroups-clustering"
 instruction = "Identify the topic or theme of the given news articles: "
 
-dataset = datasets.load_dataset(dataset, revision="6125ec4e24fa026cec8a478383ee943acfbd5449")
+dataset = datasets.load_dataset(dataset)
 batch_size = 32
 
 print("Loading model...")
@@ -30,8 +30,6 @@ def append_instruction(instruction, sentences):
 
 v_measures = []
 for cluster_set in tqdm.tqdm(dataset["test"], desc="Clustering"):
-    # evaluator = ClusteringEvaluator(cluster_set["sentences"], cluster_set["labels"], **kwargs)
-    # metrics = evaluator(model)
     sentences = cluster_set["sentences"]
     labels = cluster_set["labels"]
     clustering_batch_size = 500

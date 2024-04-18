@@ -6,10 +6,10 @@ import numpy as np
 import torch
 from llm2vec import LLM2Vec
 
-dataset = "AmazonCounterfactualClassification"
+dataset = "mteb/amazon_counterfactual"
 instruction = "Classify a given Amazon customer review text as either counterfactual or notcounterfactual: "
 
-dataset = datasets.load_dataset("mteb/amazon_counterfactual", "en")
+dataset = datasets.load_dataset(dataset, "en")
 
 sentences_train, y_train = dataset["train"]["text"], dataset["train"]["label"]
 sentences_test, y_test = dataset["test"]["text"], dataset["test"]["label"]

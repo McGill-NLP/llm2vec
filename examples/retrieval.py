@@ -7,7 +7,6 @@ import os
 from typing import Dict, List
 
 from beir.retrieval.evaluation import EvaluateRetrieval
-from beir.retrieval.search.dense import DenseRetrievalExactSearch as DRES
 
 dataset = "arguana"
 instruction = "Given a claim, find documents that refute the claim: "
