@@ -277,7 +277,6 @@ class LLM2Vec(nn.Module):
         sentences = concatenated_input_texts
 
         self.eval()
-        show_progress_bar = True
 
         if convert_to_tensor:
             convert_to_numpy = False
