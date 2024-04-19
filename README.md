@@ -96,6 +96,8 @@ tensor([[0.5485, 0.0551],
 """
 ```
 
+More examples of classification, clustering, sentence similarity etc are present in [examples](examples) directory.
+
 ## Model List
 - ### Mistral-7B
   - ### [Bi + MNTP](https://huggingface.co/McGill-NLP/LLM2Vec-Mistral-7B-Instruct-v2-mntp)
