@@ -55,19 +55,24 @@ class LLM2Vec(nn.Module):
         self.doc_max_length = doc_max_length
 
     @classmethod
-    def _get_model_class(cls, config_class_name):
+    def _get_model_class(cls, config_class_name, enable_bidirectional):
+        if not enable_bidirectional:
+            return AutoModel
         if config_class_name == "MistralConfig":
             return MistralBiModel
         elif config_class_name == "LlamaConfig":
             return LlamaBiModel
         else:
-            raise ValueError(f"{config_class_name} is not supported yet.")
+            raise ValueError(
+                f"{config_class_name} is not supported yet with bidirectional models."
+            )
 
     @classmethod
     def from_pretrained(
         cls,
         base_model_name_or_path,
         peft_model_name_or_path=None,
+        enable_bidirectional=True,
         **kwargs,
     ):
         # pop out encoder args
@@ -83,7 +88,9 @@ class LLM2Vec(nn.Module):
         config = AutoConfig.from_pretrained(base_model_name_or_path)
         config_class_name = config.__class__.__name__
 
-        model_class = cls._get_model_class(config_class_name)
+        model_class = cls._get_model_class(
+            config_class_name, enable_bidirectional=enable_bidirectional
+        )
         model = model_class.from_pretrained(base_model_name_or_path, **kwargs)
 
         # For special case where config.json and adapter weights are in the same directory
