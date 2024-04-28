@@ -403,3 +403,6 @@ class LLM2Vec(nn.Module):
         return self.model.resize_token_embeddings(
             new_num_tokens=new_num_tokens, pad_to_multiple_of=pad_to_multiple_of
         )
+
+    def gradient_checkpointing_enable(self, gradient_checkpointing_kwargs=None):
+        self.model.gradient_checkpointing_enable(gradient_checkpointing_kwargs=gradient_checkpointing_kwargs)
