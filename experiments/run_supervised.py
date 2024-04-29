@@ -16,6 +16,8 @@ from transformers import (
     TrainingArguments,
     Trainer,
     TrainerCallback,
+    LlamaConfig,
+    MistralConfig,
 )
 from transformers.trainer_utils import seed_worker
 
@@ -51,7 +53,7 @@ class DefaultCollator:
 
         for example in batch:
             for idx, text in enumerate(example.texts):
-                text = self.model.prepare_for_tokenization(text)
+                text = prepare_for_tokenization(model.model, text, pooling_mode=model.pooling_mode)
                 texts[idx].append(text)
             labels.append(example.label)
         labels = torch.tensor(labels)
@@ -147,6 +149,29 @@ class LLM2VecSupervisedTrainer(Trainer):
         # Good practice: save your training arguments together with the trained model
         torch.save(self.args, os.path.join(output_dir, "training_args.bin"))
 
+
+def prepare_for_tokenization(model, text, pooling_mode="mean"):
+    if model.config._name_or_path == "meta-llama/Meta-Llama-3-8B-Instruct":
+        text = (
+            "<|start_header_id|>user<|end_header_id|>\n\n"
+            + text.strip()
+            + "<|eot_id|>"
+        )
+        return text
+    if model.config._name_or_path in [
+        "mistralai/Mistral-7B-Instruct-v0.2",
+        "meta-llama/Llama-2-7b-chat-hf",
+    ]:
+        text = "[INST] " + text.strip() + " [/INST]"
+    if pooling_mode == "eos_token":
+        if model.config._name_or_path == "meta-llama/Meta-Llama-3-8B":
+            text = text.strip() + "<|end_of_text|>"
+        elif isinstance(model.config, LlamaConfig) or isinstance(
+            model.config, MistralConfig
+        ):
+            text = text.strip() + " </s>"
+
+    return text
 
 def initialize_peft(
     model,
