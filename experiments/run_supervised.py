@@ -53,7 +53,7 @@ class DefaultCollator:
 
         for example in batch:
             for idx, text in enumerate(example.texts):
-                text = prepare_for_tokenization(model.model, text, pooling_mode=model.pooling_mode)
+                text = prepare_for_tokenization(model, text, pooling_mode=model.pooling_mode)
                 texts[idx].append(text)
             labels.append(example.label)
         labels = torch.tensor(labels)

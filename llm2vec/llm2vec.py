@@ -53,6 +53,7 @@ class LLM2Vec(nn.Module):
         self.skip_instruction = skip_instruction
         self.max_length = max_length
         self.doc_max_length = doc_max_length
+        self.config = model.config
 
     @classmethod
     def _get_model_class(cls, config_class_name, enable_bidirectional):
