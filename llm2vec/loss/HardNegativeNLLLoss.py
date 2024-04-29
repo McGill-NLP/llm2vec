@@ -1,6 +1,6 @@
 import torch
 from torch import nn, Tensor
-from .utils import cos_sim, mismatched_sizes_all_gather
+from .loss_utils import cos_sim, mismatched_sizes_all_gather
 
 class HardNegativeNLLLoss():
     def __init__(
