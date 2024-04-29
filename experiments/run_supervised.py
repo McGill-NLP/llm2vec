@@ -1,7 +1,8 @@
 import argparse
 import logging
 from dataclasses import dataclass
-from typing import Any, Dict, List, Tuple, Union
+import os
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import torch
 from torch import nn
@@ -17,6 +18,8 @@ from transformers import (
     TrainerCallback,
 )
 from transformers.trainer_utils import seed_worker
+
+from peft import LoraConfig, get_peft_model
 
 from llm2vec import LLM2Vec
 from llm2vec.dataset.utils import load_dataset
@@ -72,6 +75,15 @@ class StopTrainingCallback(TrainerCallback):
 
 class LLM2VecSupervisedTrainer(Trainer):
 
+    def __init__(
+        self,
+        *args,
+        loss_function=None,
+        **kwargs,
+    ) -> None:
+        super().__init__(*args, **kwargs)
+        self.loss_function = loss_function
+
     def compute_loss(
         self,
         model: nn.Module,
@@ -79,12 +91,21 @@ class LLM2VecSupervisedTrainer(Trainer):
         return_outputs: bool = False,
     ) -> Union[Tuple[torch.Tensor, torch.Tensor], torch.Tensor]:
         features, labels = inputs
-        loss = model(features, labels)
+        q_reps = self.model(features[0])
+        d_reps = self.model(features[1])
+
+        d_reps_neg = None
+        if len(features) > 2:
+            d_reps_neg = self.model(features[2])
+
+        loss = self.loss_function(q_reps, d_reps, d_reps_neg)
+
         if return_outputs:
             output = torch.cat(
                 [model(row)["sentence_embedding"][:, None] for row in features], dim=1
             )
             return loss, output
+
         return loss
 
     def get_train_dataloader(self) -> DataLoader:
@@ -115,7 +136,56 @@ class LLM2VecSupervisedTrainer(Trainer):
 
         return self.accelerator.prepare(DataLoader(train_dataset, **dataloader_params))
 
+    def _save(self, output_dir: Optional[str] = None, state_dict=None):
+        # If we are executing this function, we are the process zero, so we don't check for that.
+        output_dir = output_dir if output_dir is not None else self.args.output_dir
+        os.makedirs(output_dir, exist_ok=True)
+        logger.info(f"Saving model checkpoint to {output_dir}")
 
+        self.model.save(output_dir)
+
+        # Good practice: save your training arguments together with the trained model
+        torch.save(self.args, os.path.join(output_dir, "training_args.bin"))
+
+
+def initialize_peft(
+    model,
+    lora_r: int = 8,
+    lora_alpha: int = 16,
+    lora_dropout: float = 0.05,
+    lora_modules: Optional[List[str]] = None,
+):
+    if lora_modules is None and model.config.__class__.__name__ in [
+        "LlamaConfig",
+        "MistralConfig",
+    ]:
+        lora_modules = [
+            "q_proj",
+            "v_proj",
+            "k_proj",
+            "o_proj",
+            "gate_proj",
+            "up_proj",
+            "down_proj",
+        ]
+    elif lora_modules is None:
+        raise ValueError("lora_modules must be specified for this model.")
+
+    config = LoraConfig(
+        r=lora_r,
+        lora_alpha=lora_alpha,
+        target_modules=lora_modules,
+        lora_dropout=lora_dropout,
+        bias="none",
+        task_type=None,
+    )
+
+    model = get_peft_model(model, config)
+    print(f"Model's Lora trainable parameters:")
+    model.print_trainable_parameters()
+    return model
+
+# TODO: Parse these into JSON, organize same way as MNTP
 parser = argparse.ArgumentParser()
 parser.add_argument("--model_name", type=str, default="t5-base")
 parser.add_argument("--peft_addr", type=str, default=None)
@@ -141,7 +211,6 @@ parser.add_argument("--checkpoint_save_total_limit", default=0, type=int)
 parser.add_argument("--experiment_id", default=None, type=str)
 parser.add_argument("--grad_accumulation_steps", default=1, type=int)
 parser.add_argument("--lora_r", default=8, type=int)
-parser.add_argument("--lora_alpha", default=16, type=int)
 parser.add_argument("--lora_dropout", default=0.05, type=float)
 parser.add_argument("--num_cpu_workers", default=4, type=int)
 parser.add_argument("--bidirectional", default=False, type=str2bool)
@@ -231,7 +300,6 @@ if __name__ == "__main__":
         split="train",
         file_path=args.dataset_file_path,
         effective_batch_size=args.train_batch_size * accelerator.num_processes,
-        shuffle_individual_datasets=args.shuffle_individual_datasets,
     )
 
     train_examples = [
@@ -243,8 +311,6 @@ if __name__ == "__main__":
         )
     ]
 
-    # Load LLM2Vec Model, TODO: Enable bidirectional
-
     model_args = prepare_model_args(
         bf16=args.bf16,
         fp16=args.fp16,
@@ -253,13 +319,22 @@ if __name__ == "__main__":
         load_in_4bit=args.load_in_4bit,
     )
 
-    # TODO: Enable bidirectional, make trainable as an option
     model = LLM2Vec.from_pretrained(
         base_model_name_or_path=args.model_name,
+        enable_bidirectional=args.bidirectional,
         peft_model_name_or_path=args.peft_addr,
+        merge_peft=True,
         pooling_mode=args.pooling_mode,
-        max_seq_length=args.max_seq_length,
+        max_length=args.max_seq_length,
         **model_args,
+    )
+
+    # model organization is LLM2VecModel.model -> HF Model, we have to apply PEFT to the inner model
+    model.model = initialize_peft(
+        model.model,
+        lora_r=args.lora_r,
+        lora_alpha=2 * args.lora_r,
+        lora_dropout=args.lora_dropout,
     )
 
     tokenizer = model.tokenizer
@@ -297,6 +372,7 @@ if __name__ == "__main__":
         train_dataset=train_examples,
         data_collator=data_collator,
         tokenizer=tokenizer,
+        loss_function=train_loss,
     )
 
     if args.stop_after_n_steps is not None:

@@ -108,11 +108,10 @@ def initialize_peft(
         bias="none",
         task_type=None,
     )
-    # model organization is MODEL_TYPEBiForMNTP.model -> MODEL_TYPELBiModel, we have to apply PEFT to the inner model
-    peft_model = get_peft_model(model.get_model_for_peft(), config)
+
+    model = get_peft_model(model, config)
     print(f"Model's Lora trainable parameters:")
-    peft_model.print_trainable_parameters()
-    model.set_model_for_peft(peft_model)
+    model.print_trainable_parameters()
     return model
 
 
@@ -696,8 +695,10 @@ def main():
         low_cpu_mem_usage=model_args.low_cpu_mem_usage,
         attn_implementation=model_args.attn_implementation,
     )
-    model = initialize_peft(
-        model,
+
+    # model organization is MODEL_TYPEBiForMNTP.model -> MODEL_TYPELBiModel, we have to apply PEFT to the inner model
+    model.model = initialize_peft(
+        model.model,
         lora_r=custom_args.lora_r,
         lora_alpha=2 * custom_args.lora_r,
         lora_dropout=custom_args.lora_dropout,
