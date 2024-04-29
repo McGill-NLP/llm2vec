@@ -867,6 +867,8 @@ def main():
 
         def compute_metrics(eval_preds):
             preds, labels = eval_preds
+            preds = preds[:, :-1]
+            labels = labels[:, 1:]
             # preds have the same shape as the labels, after the argmax(-1) has been calculated
             # by preprocess_logits_for_metrics
             labels = labels.reshape(-1)
