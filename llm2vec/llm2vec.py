@@ -72,6 +72,7 @@ class LLM2Vec(nn.Module):
         cls,
         base_model_name_or_path,
         peft_model_name_or_path=None,
+        merge_peft=False,
         enable_bidirectional=True,
         **kwargs,
     ):
@@ -106,6 +107,8 @@ class LLM2Vec(nn.Module):
                 model,
                 peft_model_name_or_path,
             )
+            if merge_peft:
+                model = model.merge_and_unload()
 
         config = {}
         config_addr = (
