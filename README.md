@@ -105,7 +105,7 @@ More examples of classification, clustering, sentence similarity etc are present
 
 ## Model List
 - ### Meta-Llama-3-8B
-  - ### [Bi + MNTP](https://huggingface.co/McGill-NLP/LLM2Vec-Mistral-7B-Instruct-v2-mntp)
+  - ### [Bi + MNTP](https://huggingface.co/McGill-NLP/LLM2Vec-Meta-Llama-3-8B-Instruct-mntp)
   - ### [Bi + MNTP + SimCSE](https://huggingface.co/McGill-NLP/LLM2Vec-Meta-Llama-3-8B-Instruct-mntp-unsup-simcse)
   - ### [Bi + MNTP + Supervised](https://huggingface.co/McGill-NLP/LLM2Vec-Meta-Llama-3-8B-Instruct-mntp-supervised) (state-of-the-art on MTEB among models trained on public data)
 - ### Mistral-7B
