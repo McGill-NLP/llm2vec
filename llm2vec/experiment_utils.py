@@ -1,16 +1,4 @@
-import gzip
-import random
 import re
-import shutil
-import urllib.request
-from pathlib import Path
-import numpy as np
-import torch
-import json
-import argparse
-
-from tqdm.auto import tqdm
-from tqdm.utils import CallbackIOWrapper
 
 
 def generate_experiment_id(
@@ -98,42 +86,3 @@ def parse_experiment_id(experiment_id):
     }
 
     return result
-
-def log_commandline_args(args, logger=print):
-    for arg in vars(args):
-        logger(f" - {arg}: {getattr(args, arg)}")
-
-def set_seed(args):
-    seed = args.seed
-    random.seed(seed)
-    np.random.seed(seed)
-    torch.manual_seed(seed)
-    if torch.distributed.get_world_size() > 0:
-        torch.cuda.manual_seed_all(seed)
-
-
-def str2bool(v):
-    if isinstance(v, bool):
-        return v
-    if v.lower() in ('yes', 'true', 't', 'y', '1'):
-        return True
-    elif v.lower() in ('no', 'false', 'f', 'n', '0'):
-        return False
-    else:
-        raise argparse.ArgumentTypeError('Boolean value expected.')
-
-def prepare_model_args(**kwargs):
-    args = {}
-    for k, v in kwargs.items():
-        if k == "flash_attention_2" and v:
-            args["attn_implementation"] = "flash_attention_2"
-        if k == "bf16" and v:
-            args["torch_dtype"] = torch.bfloat16
-        if k == "fp16" and v:
-            args["torch_dtype"] = torch.float16
-        if (k == "load_in_8bit" or k == "load_in_4bit") and v:
-            args[k] = v
-        if k == "bidirectional":
-            args[k] = v
-
-    return args
