@@ -99,10 +99,14 @@ tensor([[0.5485, 0.0551],
 More examples of classification, clustering, sentence similarity etc are present in [examples](examples) directory.
 
 ## Model List
+- ### Meta-Llama-3-8B
+  - ### [Bi + MNTP](https://huggingface.co/McGill-NLP/LLM2Vec-Mistral-7B-Instruct-v2-mntp)
+  - ### [Bi + MNTP + SimCSE](https://huggingface.co/McGill-NLP/LLM2Vec-Meta-Llama-3-8B-Instruct-mntp-unsup-simcse)
+  - ### [Bi + MNTP + Supervised](https://huggingface.co/McGill-NLP/LLM2Vec-Meta-Llama-3-8B-Instruct-mntp) (state-of-the-art on MTEB among models trained on public data)
 - ### Mistral-7B
   - ### [Bi + MNTP](https://huggingface.co/McGill-NLP/LLM2Vec-Mistral-7B-Instruct-v2-mntp)
   - ### [Bi + MNTP + SimCSE](https://huggingface.co/McGill-NLP/LLM2Vec-Mistral-7B-Instruct-v2-unsup-simcse) (Unsupervised state-of-the-art on MTEB)
-  - ### [Bi + MNTP + Supervised](https://huggingface.co/McGill-NLP/LLM2Vec-Mistral-7B-Instruct-v2-mntp-supervised) (state-of-the-art on MTEB among models trained on public data)
+  - ### [Bi + MNTP + Supervised](https://huggingface.co/McGill-NLP/LLM2Vec-Mistral-7B-Instruct-v2-mntp-supervised)
 - ### Llama-2-7B
   - ### [Bi + MNTP](https://huggingface.co/McGill-NLP/LLM2Vec-Llama-2-7b-chat-hf-mntp)
   - ### [Bi + MNTP + SimCSE](https://huggingface.co/McGill-NLP/LLM2Vec-Llama-2-7b-chat-hf-unsup-simcse)
