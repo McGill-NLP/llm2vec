@@ -53,6 +53,7 @@ class LLM2Vec(nn.Module):
         self.skip_instruction = skip_instruction
         self.max_length = max_length
         self.doc_max_length = doc_max_length
+        self.config = model.config
 
     @classmethod
     def _get_model_class(cls, config_class_name, enable_bidirectional):
@@ -72,6 +73,7 @@ class LLM2Vec(nn.Module):
         cls,
         base_model_name_or_path,
         peft_model_name_or_path=None,
+        merge_peft=False,
         enable_bidirectional=True,
         **kwargs,
     ):
@@ -106,6 +108,8 @@ class LLM2Vec(nn.Module):
                 model,
                 peft_model_name_or_path,
             )
+            if merge_peft:
+                model = model.merge_and_unload()
 
         config = {}
         config_addr = (
@@ -124,20 +128,26 @@ class LLM2Vec(nn.Module):
         return cls(model=model, tokenizer=tokenizer, **config)
 
     def prepare_for_tokenization(self, text):
-        def _is_instruct(name):
-            return (
-                ("chat" in name.lower())
-                or ("instruct" in name.lower())
-                or ("sharegpt" in name.lower())
+        if self.model.config._name_or_path == "meta-llama/Meta-Llama-3-8B-Instruct":
+            text = (
+                "<|start_header_id|>user<|end_header_id|>\n\n"
+                + text.strip()
+                + "<|eot_id|>"
             )
-
-        if _is_instruct(self.model.config._name_or_path):
+            return text
+        if self.model.config._name_or_path in [
+            "mistralai/Mistral-7B-Instruct-v0.2",
+            "meta-llama/Llama-2-7b-chat-hf",
+        ]:
             text = "[INST] " + text.strip() + " [/INST]"
-        if (
-            isinstance(self.model.config, LlamaConfig)
-            or isinstance(self.model.config, MistralConfig)
-        ) and self.pooling_mode == "eos_token":
-            text = text.strip() + " </s>"
+        if self.pooling_mode == "eos_token":
+            if self.model.config._name_or_path == "meta-llama/Meta-Llama-3-8B":
+                text = text.strip() + "<|end_of_text|>"
+            elif isinstance(self.model.config, LlamaConfig) or isinstance(
+                self.model.config, MistralConfig
+            ):
+                text = text.strip() + " </s>"
+
         return text
 
     def tokenize(self, texts):
@@ -402,4 +412,9 @@ class LLM2Vec(nn.Module):
     ) -> nn.Embedding:
         return self.model.resize_token_embeddings(
             new_num_tokens=new_num_tokens, pad_to_multiple_of=pad_to_multiple_of
+        )
+
+    def gradient_checkpointing_enable(self, gradient_checkpointing_kwargs=None):
+        self.model.gradient_checkpointing_enable(
+            gradient_checkpointing_kwargs=gradient_checkpointing_kwargs
         )
