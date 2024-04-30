@@ -13,6 +13,11 @@ LLM2Vec is a simple recipe to convert decoder-only LLMs into text encoders. It c
   <img src="https://github.com/McGill-NLP/llm2vec/assets/12207571/48efd48a-431b-4625-8e0f-248a442e3839" width="75%" alt="LLM2Vec_figure1"/>
 </p>
 
+**************************** **Updates** ****************************
+
+
+* 30/04: We release LLM2Vec transformed Meta-Llama-3 checkpoints. See our [HuggingFace collection](https://huggingface.co/collections/McGill-NLP/llm2vec-660e14f536b3c8d10b3f1c34) for both [supervised](https://huggingface.co/McGill-NLP/LLM2Vec-Meta-Llama-3-8B-Instruct-mntp-supervised) and [unsupervised](https://huggingface.co/McGill-NLP/LLM2Vec-Meta-Llama-3-8B-Instruct-mntp-unsup-simcse) variants.
+
 ## Installation
 To use LLM2Vec, first install the llm2vec package from PyPI, followed by installing flash-attention:
 
