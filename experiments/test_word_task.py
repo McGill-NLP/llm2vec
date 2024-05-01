@@ -8,7 +8,7 @@ from datasets import load_dataset
 import evaluate
 import json
 from tqdm import tqdm
-from run_word_task import ModelForWordTask, prepare_model_args
+from run_word_task import ModelForWordTask
 from llm2vec import LLM2Vec
 
 
@@ -92,17 +92,14 @@ if __name__ == '__main__':
         for k, v in config_kwargs.items():
             config.__setattr__(k, v)
 
-        custom_model_args = prepare_model_args(
-            bf16=True,
-            flash_attention_2=True,
-        )
-
         l2v = LLM2Vec.from_pretrained(
             base_model_name_or_path=args.model_identifier_or_path,
             enable_bidirectional=args.bidirectional,
             peft_model_name_or_path=args.peft_addr,
             merge_peft=False,
-            **custom_model_args,
+            # TODO: Shift this to the argparse
+            torch_dtype=torch.bfloat16,
+            attn_implementation="flash_attention_2",
         )
 
         model = ModelForWordTask(
