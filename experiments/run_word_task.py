@@ -37,9 +37,6 @@ from transformers.utils import send_example_telemetry
 from transformers.utils.versions import require_version
 
 from llm2vec import LLM2Vec
-from llm2vec.experiment_utils import (
-    prepare_model_args,
-)
 
 require_version("datasets>=1.8.0", "To fix: pip install -r examples/pytorch/language-modeling/requirements.txt")
 
@@ -551,17 +548,14 @@ def main():
         for k, v in config_kwargs.items():
             config.__setattr__(k, v)
 
-        custom_model_args = prepare_model_args(
-            bf16=True,
-            flash_attention_2=True,
-        )
-
         l2v = LLM2Vec.from_pretrained(
             base_model_name_or_path=model_args.model_name_or_path,
             enable_bidirectional=custom_args.bidirectional,
             peft_model_name_or_path=custom_args.peft_addr,
             merge_peft=False,
-            **custom_model_args,
+            # TODO: Shift this to the argparse
+            torch_dtype=torch.bfloat16,
+            attn_implementation="flash_attention_2",
         )
 
         model = ModelForWordTask(
