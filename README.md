@@ -146,7 +146,53 @@ The Mistral training configuration [file](train_configs/mntp/Mistral.json) conta
 }
 ```
 
-Similar configurations are also available for [Llama-2-7B](train_configs/mntp/Llama.json) and [Sheared-Llama-1.3B](train_configs/mntp/Sheared-Llama.json) models.
+Similar configurations are also available for[Meta-Llama-3-8B](train_configs/mntp/MetaLlama3.json), [Llama-2-7B](train_configs/mntp/Llama2.json), and [Sheared-Llama-1.3B](train_configs/mntp/Sheared-Llama.json) models.
+
+### Unsupervised contrastive training (SimCSE)
+COMING SOON
+
+### Supervised contrastive training
+For supervised contrastive training, we use the public portion of dataset used in [Improving Text Embeddings with Large Language Models](https://arxiv.org/abs/2401.00368), curated by authors of [Repetition Improves Language Model Embeddings](https://arxiv.org/abs/2402.15449). The dataset can be downloaded from the [GitHub page of Echo embeddings repository](https://github.com/jakespringer/echo-embeddings#training). To use the training script, the downloaded dataset should be placed in the `cache` directory. The directory layout should be as follows:
+
+```
+cache
+└── echo-data
+    ├── allnli_split1.jsonl
+    ├── allnli_split2.jsonl
+    ├── allnli.jsonl
+    ├── dureader.jsonl
+    ...
+```
+If the dataset is placed in a different directory, please change the `dataset_file_path` in the training configuration accordingly. 
+
+To train the Mistral-7B model with supervised contrastive learning, run the following command:
+
+```bash
+python experiments/run_supervised.py train_configs/supervised/Mistral.json
+```
+
+The Mistral training configuration [file](train_configs/supervised/Mistral.json) contains all the training hyperparameters and configurations used in our paper. 
+```json
+{
+    "model_name_or_path": "mistralai/Mistral-7B-Instruct-v0.2",
+    "peft_model_name_or_path": "McGill-NLP/LLM2Vec-Mistral-7B-Instruct-v2-mntp",
+    "bidirectional": true,
+    "pooling_mode": "mean",
+    "dataset_name": "E5",
+    "dataset_file_path": "cache/echo-data",
+    "learning_rate": 2e-4,
+    "num_train_epochs": 3,
+    "warmup_steps": 300,
+    "per_device_train_batch_size": 64,
+    "lora_r": 16,
+    "gradient_checkpointing": true,
+    "torch_dtype": "bfloat16",
+    "attn_implementation": "flash_attention_2"
+    // ....
+}
+```
+Similar configurations are also available for [Meta-Llama-3-8B](train_configs/supervised/MetaLlama3.json), [Llama-2-7B](train_configs/supervised/Llama2.json), and [Sheared-Llama-1.3B](train_configs/supervised/Sheared-Llama.json) models.
+
 
 ## Citation
 If you find our work helpful, please cite us:
