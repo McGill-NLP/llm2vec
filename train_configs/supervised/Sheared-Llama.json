@@ -1,6 +1,6 @@
 {
-    "model_name_or_path": "mistralai/Mistral-7B-Instruct-v0.2",
-    "peft_model_name_or_path": "McGill-NLP/LLM2Vec-Mistral-7B-Instruct-v2-mntp",
+    "model_name_or_path": "princeton-nlp/Sheared-LLaMA-1.3B",
+    "peft_model_name_or_path": "McGill-NLP/LLM2Vec-Sheared-LLaMA-mntp",
     "bidirectional": true,
     "pooling_mode": "mean",
     "dataset_name": "E5",
@@ -16,7 +16,7 @@
     "disable_tqdm": false,
     "max_seq_length": 512,
     "overwrite_output_dir": true,
-    "output_dir": "output/supervised/Mistral-7B-Instruct-v0.2",
+    "output_dir": "output/supervised/Sheared-LLaMA-1.3B",
     "logging_steps": 50,
     "save_steps": 200,
     "save_only_model": true,

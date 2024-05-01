@@ -2,7 +2,7 @@
 
 [![arxiv](https://img.shields.io/badge/arXiv-2404.05961-b31b1b.svg)](https://arxiv.org/abs/2404.05961)
 [![PyPi](https://img.shields.io/pypi/v/llm2vec)](https://pypi.org/project/llm2vec/)
-[![HF](https://img.shields.io/badge/HF%20Models-LLM2Vec-FFD21E.svg)](https://huggingface.co/collections/McGill-NLP/llm2vec-660e14f536b3c8d10b3f1c34)
+[![HF Link](https://img.shields.io/badge/HF%20Models-LLM2Vec-FFD21E.svg)](https://huggingface.co/collections/McGill-NLP/llm2vec-660e14f536b3c8d10b3f1c34)
 
 
 
@@ -104,22 +104,16 @@ tensor([[0.5485, 0.0551],
 More examples of classification, clustering, sentence similarity etc are present in [examples](examples) directory.
 
 ## Model List
-- ### Meta-Llama-3-8B
-  - ### [Bi + MNTP](https://huggingface.co/McGill-NLP/LLM2Vec-Meta-Llama-3-8B-Instruct-mntp)
-  - ### [Bi + MNTP + SimCSE](https://huggingface.co/McGill-NLP/LLM2Vec-Meta-Llama-3-8B-Instruct-mntp-unsup-simcse)
-  - ### [Bi + MNTP + Supervised](https://huggingface.co/McGill-NLP/LLM2Vec-Meta-Llama-3-8B-Instruct-mntp-supervised) (state-of-the-art on MTEB among models trained on public data)
-- ### Mistral-7B
-  - ### [Bi + MNTP](https://huggingface.co/McGill-NLP/LLM2Vec-Mistral-7B-Instruct-v2-mntp)
-  - ### [Bi + MNTP + SimCSE](https://huggingface.co/McGill-NLP/LLM2Vec-Mistral-7B-Instruct-v2-unsup-simcse) (Unsupervised state-of-the-art on MTEB)
-  - ### [Bi + MNTP + Supervised](https://huggingface.co/McGill-NLP/LLM2Vec-Mistral-7B-Instruct-v2-mntp-supervised)
-- ### Llama-2-7B
-  - ### [Bi + MNTP](https://huggingface.co/McGill-NLP/LLM2Vec-Llama-2-7b-chat-hf-mntp)
-  - ### [Bi + MNTP + SimCSE](https://huggingface.co/McGill-NLP/LLM2Vec-Llama-2-7b-chat-hf-unsup-simcse)
-  - ### [Bi + MNTP + Supervised](https://huggingface.co/McGill-NLP/LLM2Vec-Llama-2-7b-chat-hf-mntp-supervised)
-- ### Sheared-Llama-1.3B
-  - ### [Bi + MNTP](https://huggingface.co/McGill-NLP/LLM2Vec-Sheared-LLaMA-mntp)
-  - ### [Bi + MNTP + SimCSE](https://huggingface.co/McGill-NLP/LLM2Vec-Sheared-LLaMA-unsup-simcse)
-  - ### [Bi + MNTP + Supervised](https://huggingface.co/McGill-NLP/LLM2Vec-Sheared-LLaMA-mntp-supervised)
+
+|  | Meta-Llama-3-8B | Mistral-7B | Llama-2-7B | Sheared-Llama-1.3B |
+|----|------------------|------------|------------|---------------------|
+| Bi + MNTP | [HF Link](https://huggingface.co/McGill-NLP/LLM2Vec-Meta-Llama-3-8B-Instruct-mntp) | [HF Link](https://huggingface.co/McGill-NLP/LLM2Vec-Mistral-7B-Instruct-v2-mntp) | [HF Link](https://huggingface.co/McGill-NLP/LLM2Vec-Llama-2-7b-chat-hf-mntp) | [HF Link](https://huggingface.co/McGill-NLP/LLM2Vec-Sheared-LLaMA-mntp) |
+| Bi + MNTP + SimCSE | [HF Link](https://huggingface.co/McGill-NLP/LLM2Vec-Meta-Llama-3-8B-Instruct-mntp-unsup-simcse) | [HF Link](https://huggingface.co/McGill-NLP/LLM2Vec-Mistral-7B-Instruct-v2-unsup-simcse)** | [HF Link](https://huggingface.co/McGill-NLP/LLM2Vec-Llama-2-7b-chat-hf-unsup-simcse) | [HF Link](https://huggingface.co/McGill-NLP/LLM2Vec-Sheared-LLaMA-unsup-simcse) |
+| Bi + MNTP + Supervised | [HF Link](https://huggingface.co/McGill-NLP/LLM2Vec-Meta-Llama-3-8B-Instruct-mntp-supervised)* | [HF Link](https://huggingface.co/McGill-NLP/LLM2Vec-Mistral-7B-Instruct-v2-mntp-supervised) | [HF Link](https://huggingface.co/McGill-NLP/LLM2Vec-Llama-2-7b-chat-hf-mntp-supervised) | [HF Link](https://huggingface.co/McGill-NLP/LLM2Vec-Sheared-LLaMA-mntp-supervised) |
+
+\* State-of-the-art on MTEB among models trained on public data
+
+\*\* Unsupervised state-of-the-art on MTEB
 
 ## Training 
 ### MNTP training
@@ -146,7 +140,53 @@ The Mistral training configuration [file](train_configs/mntp/Mistral.json) conta
 }
 ```
 
-Similar configurations are also available for [Llama-2-7B](train_configs/mntp/Llama.json) and [Sheared-Llama-1.3B](train_configs/mntp/Sheared-Llama.json) models.
+Similar configurations are also available for[Meta-Llama-3-8B](train_configs/mntp/MetaLlama3.json), [Llama-2-7B](train_configs/mntp/Llama2.json), and [Sheared-Llama-1.3B](train_configs/mntp/Sheared-Llama.json) models.
+
+### Unsupervised contrastive training (SimCSE)
+COMING SOON
+
+### Supervised contrastive training
+For supervised contrastive training, we use the public portion of dataset used in [Improving Text Embeddings with Large Language Models](https://arxiv.org/abs/2401.00368), curated by authors of [Repetition Improves Language Model Embeddings](https://arxiv.org/abs/2402.15449). The dataset can be downloaded from the [GitHub page of Echo embeddings repository](https://github.com/jakespringer/echo-embeddings#training). To use the training script, the downloaded dataset should be placed in the `cache` directory. The directory layout should be as follows:
+
+```
+cache
+└── echo-data
+    ├── allnli_split1.jsonl
+    ├── allnli_split2.jsonl
+    ├── allnli.jsonl
+    ├── dureader.jsonl
+    ...
+```
+If the dataset is placed in a different directory, please change the `dataset_file_path` in the training configuration accordingly. 
+
+To train the Mistral-7B model with supervised contrastive learning, run the following command:
+
+```bash
+python experiments/run_supervised.py train_configs/supervised/Mistral.json
+```
+
+The Mistral training configuration [file](train_configs/supervised/Mistral.json) contains all the training hyperparameters and configurations used in our paper. 
+```json
+{
+    "model_name_or_path": "mistralai/Mistral-7B-Instruct-v0.2",
+    "peft_model_name_or_path": "McGill-NLP/LLM2Vec-Mistral-7B-Instruct-v2-mntp",
+    "bidirectional": true,
+    "pooling_mode": "mean",
+    "dataset_name": "E5",
+    "dataset_file_path": "cache/echo-data",
+    "learning_rate": 2e-4,
+    "num_train_epochs": 3,
+    "warmup_steps": 300,
+    "per_device_train_batch_size": 64,
+    "lora_r": 16,
+    "gradient_checkpointing": true,
+    "torch_dtype": "bfloat16",
+    "attn_implementation": "flash_attention_2"
+    // ....
+}
+```
+Similar configurations are also available for [Meta-Llama-3-8B](train_configs/supervised/MetaLlama3.json), [Llama-2-7B](train_configs/supervised/Llama2.json), and [Sheared-Llama-1.3B](train_configs/supervised/Sheared-Llama.json) models.
+
 
 ## Citation
 If you find our work helpful, please cite us:
