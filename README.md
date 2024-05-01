@@ -162,8 +162,9 @@ If the dataset is placed in a different directory, please change the `dataset_fi
 To train the Mistral-7B model with supervised contrastive learning, run the following command:
 
 ```bash
-python experiments/run_supervised.py train_configs/supervised/Mistral.json
+torchrun --nproc_per_node=8 experiments/run_supervised.py train_configs/supervised/Mistral.json
 ```
+The number of GPUs can be changed by modifying the `--nproc_per_node` argument.
 
 The Mistral training configuration [file](train_configs/supervised/Mistral.json) contains all the training hyperparameters and configurations used in our paper. 
 ```json
