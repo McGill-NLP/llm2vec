@@ -2,7 +2,7 @@
 
 [![arxiv](https://img.shields.io/badge/arXiv-2404.05961-b31b1b.svg)](https://arxiv.org/abs/2404.05961)
 [![PyPi](https://img.shields.io/pypi/v/llm2vec)](https://pypi.org/project/llm2vec/)
-[![HF](https://img.shields.io/badge/HF%20Models-LLM2Vec-FFD21E.svg)](https://huggingface.co/collections/McGill-NLP/llm2vec-660e14f536b3c8d10b3f1c34)
+[![HF Link](https://img.shields.io/badge/HF%20Models-LLM2Vec-FFD21E.svg)](https://huggingface.co/collections/McGill-NLP/llm2vec-660e14f536b3c8d10b3f1c34)
 
 
 
@@ -104,22 +104,16 @@ tensor([[0.5485, 0.0551],
 More examples of classification, clustering, sentence similarity etc are present in [examples](examples) directory.
 
 ## Model List
-- ### Meta-Llama-3-8B
-  - ### [Bi + MNTP](https://huggingface.co/McGill-NLP/LLM2Vec-Meta-Llama-3-8B-Instruct-mntp)
-  - ### [Bi + MNTP + SimCSE](https://huggingface.co/McGill-NLP/LLM2Vec-Meta-Llama-3-8B-Instruct-mntp-unsup-simcse)
-  - ### [Bi + MNTP + Supervised](https://huggingface.co/McGill-NLP/LLM2Vec-Meta-Llama-3-8B-Instruct-mntp-supervised) (state-of-the-art on MTEB among models trained on public data)
-- ### Mistral-7B
-  - ### [Bi + MNTP](https://huggingface.co/McGill-NLP/LLM2Vec-Mistral-7B-Instruct-v2-mntp)
-  - ### [Bi + MNTP + SimCSE](https://huggingface.co/McGill-NLP/LLM2Vec-Mistral-7B-Instruct-v2-unsup-simcse) (Unsupervised state-of-the-art on MTEB)
-  - ### [Bi + MNTP + Supervised](https://huggingface.co/McGill-NLP/LLM2Vec-Mistral-7B-Instruct-v2-mntp-supervised)
-- ### Llama-2-7B
-  - ### [Bi + MNTP](https://huggingface.co/McGill-NLP/LLM2Vec-Llama-2-7b-chat-hf-mntp)
-  - ### [Bi + MNTP + SimCSE](https://huggingface.co/McGill-NLP/LLM2Vec-Llama-2-7b-chat-hf-unsup-simcse)
-  - ### [Bi + MNTP + Supervised](https://huggingface.co/McGill-NLP/LLM2Vec-Llama-2-7b-chat-hf-mntp-supervised)
-- ### Sheared-Llama-1.3B
-  - ### [Bi + MNTP](https://huggingface.co/McGill-NLP/LLM2Vec-Sheared-LLaMA-mntp)
-  - ### [Bi + MNTP + SimCSE](https://huggingface.co/McGill-NLP/LLM2Vec-Sheared-LLaMA-unsup-simcse)
-  - ### [Bi + MNTP + Supervised](https://huggingface.co/McGill-NLP/LLM2Vec-Sheared-LLaMA-mntp-supervised)
+
+|  | Meta-Llama-3-8B | Mistral-7B | Llama-2-7B | Sheared-Llama-1.3B |
+|----|------------------|------------|------------|---------------------|
+| Bi + MNTP | [HF Link](https://huggingface.co/McGill-NLP/LLM2Vec-Meta-Llama-3-8B-Instruct-mntp) | [HF Link](https://huggingface.co/McGill-NLP/LLM2Vec-Mistral-7B-Instruct-v2-mntp) | [HF Link](https://huggingface.co/McGill-NLP/LLM2Vec-Llama-2-7b-chat-hf-mntp) | [HF Link](https://huggingface.co/McGill-NLP/LLM2Vec-Sheared-LLaMA-mntp) |
+| Bi + MNTP + SimCSE | [HF Link](https://huggingface.co/McGill-NLP/LLM2Vec-Meta-Llama-3-8B-Instruct-mntp-unsup-simcse) | [HF Link](https://huggingface.co/McGill-NLP/LLM2Vec-Mistral-7B-Instruct-v2-unsup-simcse)** | [HF Link](https://huggingface.co/McGill-NLP/LLM2Vec-Llama-2-7b-chat-hf-unsup-simcse) | [HF Link](https://huggingface.co/McGill-NLP/LLM2Vec-Sheared-LLaMA-unsup-simcse) |
+| Bi + MNTP + Supervised | [HF Link](https://huggingface.co/McGill-NLP/LLM2Vec-Meta-Llama-3-8B-Instruct-mntp-supervised)* | [HF Link](https://huggingface.co/McGill-NLP/LLM2Vec-Mistral-7B-Instruct-v2-mntp-supervised) | [HF Link](https://huggingface.co/McGill-NLP/LLM2Vec-Llama-2-7b-chat-hf-mntp-supervised) | [HF Link](https://huggingface.co/McGill-NLP/LLM2Vec-Sheared-LLaMA-mntp-supervised) |
+
+\* State-of-the-art on MTEB among models trained on public data
+
+\*\* Unsupervised state-of-the-art on MTEB
 
 ## Training 
 ### MNTP training
