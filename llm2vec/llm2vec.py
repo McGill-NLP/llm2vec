@@ -277,12 +277,31 @@ class LLM2Vec(nn.Module):
         show_progress_bar: bool = True,
         convert_to_numpy: bool = False,
         convert_to_tensor: bool = False,
+        device: Optional[str] = None,
     ):
+        """
+        Encode a list of sentences to their respective embeddings. The sentences can be a list of strings or a string.
+        Args:
+            sentences: sentence or sentences to encode.
+            batch_size: batch size for turning sentence tokens into embeddings.
+            show_progress_bar: whether to show progress bars during encoding steps.
+            convert_to_numpy: If true, return numpy arrays instead of torch tensors.
+            convert_to_tensor: If true, return torch tensors (default).
+            device: torch backend device identifier (e.g., 'cuda', 'cpu','mps' etc.). If not specified,
+            the default is to use cuda when available, otherwise cpu. Note that only the choice of 'cuda' supports
+            multiprocessing as currently implemented.
+
+        Returns: embeddings of the sentences.
+
+        """
         if isinstance(sentences[0], str) and isinstance(sentences[-1], int):
             sentences = [sentences]
         # required for MEDI version of MTEB
         if isinstance(sentences[0], str):
             sentences = [[""] + [sentence] for sentence in sentences]
+
+        if device is None:
+                device = "cuda" if torch.cuda.is_available() else "cpu"
 
         concatenated_input_texts = []
         for sentence in sentences:
@@ -303,7 +322,7 @@ class LLM2Vec(nn.Module):
         all_embeddings = []
 
         if torch.cuda.device_count() <= 1:
-            device = "cuda" if torch.cuda.is_available() else "cpu"
+            # This branch also support mps devices
             self.to(device)
             for start_index in trange(
                 0,
@@ -320,6 +339,7 @@ class LLM2Vec(nn.Module):
                 )
                 all_embeddings.append(embeddings)
         else:
+
             num_proc = torch.cuda.device_count()
             cuda_compatible_multiprocess = mp.get_context("spawn")
             with cuda_compatible_multiprocess.Pool(num_proc) as p:
@@ -330,6 +350,8 @@ class LLM2Vec(nn.Module):
                 for result in p.map(
                     partial(
                         self._encode,
+                        # This branch only supports CUDA devices, so we ignore the value of device
+                        # and let _encode determine it based on rank.
                         device=None,
                         convert_to_numpy=convert_to_numpy,
                         multiprocessing=True,
@@ -367,8 +389,10 @@ class LLM2Vec(nn.Module):
             with open(f"{output_path}/llm2vec_config.json", "w") as fOut:
                 json.dump(llm2vec_config, fOut, indent=4)
 
-    def _encode(self, sentences_batch, device, convert_to_numpy, multiprocessing=False):
+    def _encode(self, sentences_batch, device:Optional[str]=None, convert_to_numpy:bool=False, multiprocessing=False):
         if multiprocessing:
+            # multiprocessing only supports CUDA devices at this time, so we ignore the value of device
+            # and use cuda:rank for the device
             rank = mp.current_process()._identity[0]
             if device is None and torch.cuda.is_available():
                 device = f"cuda:{rank % torch.cuda.device_count()}"
