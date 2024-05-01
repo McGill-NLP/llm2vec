@@ -4,7 +4,7 @@
     "bidirectional": true,
     "pooling_mode": "mean",
     "dataset_name": "E5",
-    "dataset_file_path": "cache/E5-data",
+    "dataset_file_path": "cache/echo-data",
     "remove_unused_columns": false,
     "learning_rate": 2e-4,
     "num_train_epochs": 3,
