@@ -1,0 +1,16 @@
+{
+    "model_name_or_path": "princeton-nlp/Sheared-LLaMA-1.3B",
+    "peft_addr": "McGill-NLP/LLM2Vec-Sheared-LLaMA-mntp",
+    "cls_addr": "output/word-task/pos_tags/ShearedLlama/bi-mntp/checkpoint-3000", 
+    "model_class": "custom",
+    "bidirectional": true,
+    "classifier_dropout": 0.1,
+    "torch_dtype": "bfloat16",
+    "attn_implementation": "flash_attention_2",
+    "merge_subwords": true,
+    "retroactive_labels": "next_token",
+    "output_dir": "output/word-task/pos_tags/ShearedLlama/bi-mntp/results/checkpoint-3000",
+    "dataset_name": "conll2003",
+    "task": "pos_tags",
+    "max_seq_length": 512
+}
