@@ -1,0 +1,16 @@
+{
+    "model_name_or_path": "mistralai/Mistral-7B-Instruct-v0.2",
+    "peft_addr": "McGill-NLP/LLM2Vec-Mistral-7B-Instruct-v2-mntp",
+    "cls_addr": "output/word-task/pos_tags/Mistral/bi-mntp/checkpoint-3000", 
+    "model_class": "custom",
+    "bidirectional": true,
+    "classifier_dropout": 0.1,
+    "torch_dtype": "bfloat16",
+    "attn_implementation": "flash_attention_2",
+    "merge_subwords": true,
+    "retroactive_labels": "next_token",
+    "output_dir": "output/word-task/pos_tags/Mistral/bi-mntp/results/checkpoint-3000",
+    "dataset_name": "conll2003",
+    "task": "pos_tags",
+    "max_seq_length": 512
+}

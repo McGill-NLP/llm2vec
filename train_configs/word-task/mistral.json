@@ -1,6 +1,6 @@
 {
-    "model_name_or_path": "meta-llama/Llama-2-7b-chat-hf",
-    "peft_addr": "McGill-NLP/LLM2Vec-Llama-2-7b-chat-hf-mntp",
+    "model_name_or_path": "mistralai/Mistral-7B-Instruct-v0.2",
+    "peft_addr": "McGill-NLP/LLM2Vec-Mistral-7B-Instruct-v2-mntp",
     "model_class": "custom",
     "bidirectional": true,
     "classifier_dropout": 0.1,
@@ -8,7 +8,7 @@
     "attn_implementation": "flash_attention_2",
     "merge_subwords": true,
     "retroactive_labels": "next_token",
-    "output_dir": "output/Llama2/bi-mntp",
+    "output_dir": "output/word-task/pos_tags/Mistral/bi-mntp",
     "dataset_name": "conll2003",
     "task": "pos_tags",
     "num_train_epochs": 10,
