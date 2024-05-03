@@ -2,7 +2,7 @@ import os
 import sys
 import logging
 import argparse
-from transformers import AutoTokenizer, AutoConfig, AutoModelForTokenClassification
+from transformers import AutoTokenizer, AutoConfig, AutoModelForTokenClassification, set_seed, HfArgumentParser
 import torch
 from datasets import load_dataset
 import evaluate
@@ -41,30 +41,50 @@ if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
     parser = argparse.ArgumentParser()
     parser.add_argument("--model_class", default="custom", type=str)
-    parser.add_argument("--model_identifier_or_path", default="hkunlp/instructor-large", type=str)
+    parser.add_argument("--model_name_or_path", default=None, type=str)
     parser.add_argument("--peft_addr", default=None, type=str, help="The dir address where adapter_model.bin is saved.")
     parser.add_argument("--cls_addr", default=None, type=str, help="The dir address where classifier is saved.")
     parser.add_argument("--bidirectional", default=True, type=str2bool)
     parser.add_argument("--merge_subwords", default=True, type=str2bool)
-    parser.add_argument("--retroactive_labels", default="next_token", type=str)  # Options: same_token, next_token
     parser.add_argument("--output_dir", default=None, type=str)
-
-    parser.add_argument("--dataset_name", default=None, type=str)
-    parser.add_argument("--task", default=None, type=str)
-    parser.add_argument("--max_seq_length", default=1024, type=int)
     parser.add_argument("--classifier_dropout", default=0.1, type=float)
+    parser.add_argument("--attn_implementation", default="sdpa", type=str, choices=["sdpa", "eager", "flash_attention_2"])
+    parser.add_argument("--torch_dtype", default=None, type=str, choices=["auto", "bfloat16", "float16", "float32"])
+
+    parser.add_argument("--retroactive_labels", default="next_token", type=str, choices=["next_token", "same_token"])
+    parser.add_argument("--dataset_name", default=None, type=str)
+    parser.add_argument("--task", default=None, type=str, choices=["pos_tags", "chunk_tags", "ner_tags"])
+    parser.add_argument("--max_seq_length", default=1024, type=int)
     parser.add_argument("--batch_size", default=32, type=int)
+    parser.add_argument("--seed", default=32, type=int)
+
+    parser.add_argument("--config_file", default=None, type=str)
 
     args = parser.parse_args()
 
-    path_to_check = args.peft_addr if args.peft_addr else args.model_identifier_or_path
+    if args.config_file is not None:
+        # If we pass only one argument to the script and it's the path to a json file,
+        # let's parse it to get our arguments.
+        from pathlib import Path
+        import json
+
+        json_text = json.load(open(os.path.abspath(args.config_file)))
+        argparse_dict = vars(args)
+        argparse_dict.update(json_text)
+        # args = parser.parse_json_file(json_file=os.path.abspath(sys.argv[1]))
+    else:
+        args = parser.parse_args()
+
+    path_to_check = args.peft_addr if args.peft_addr else args.model_name_or_path
     assert args.output_dir is not None, "If you want to evaluate a model, you have to provide the output_dir"
     os.makedirs(args.output_dir,exist_ok=True)
+
+    set_seed(args.seed)
     
     tokenizer_kwargs = {}
-    if "gpt" in args.model_identifier_or_path:
+    if "gpt" in args.model_name_or_path:
         tokenizer_kwargs["add_prefix_space"] = True
-    tokenizer = AutoTokenizer.from_pretrained(args.model_identifier_or_path, **tokenizer_kwargs)
+    tokenizer = AutoTokenizer.from_pretrained(args.model_name_or_path, **tokenizer_kwargs)
     if tokenizer.pad_token_id is None:
         tokenizer.pad_token = tokenizer.eos_token
 
@@ -84,29 +104,32 @@ if __name__ == '__main__':
     }
 
     if args.model_class == "custom":
-        if args.model_identifier_or_path:
-            config = AutoConfig.from_pretrained(args.model_identifier_or_path, **config_kwargs)
+        if args.model_name_or_path:
+            config = AutoConfig.from_pretrained(args.model_name_or_path, **config_kwargs)
         else:
             raise ValueError('Invalid config loading')
 
         for k, v in config_kwargs.items():
             config.__setattr__(k, v)
 
+        torch_dtype = (
+            args.torch_dtype
+            if args.torch_dtype in ["auto", None]
+            else getattr(torch, args.torch_dtype)
+        )
         l2v = LLM2Vec.from_pretrained(
-            base_model_name_or_path=args.model_identifier_or_path,
+            base_model_name_or_path=args.model_name_or_path,
             enable_bidirectional=args.bidirectional,
             peft_model_name_or_path=args.peft_addr,
             merge_peft=False,
-            # TODO: Shift this to the argparse
-            torch_dtype=torch.bfloat16,
-            attn_implementation="flash_attention_2",
+            torch_dtype=torch_dtype,
+            attn_implementation=args.attn_implementation,
         )
-
         model = ModelForWordTask(
             model=l2v.model, 
             merge_subwords=args.merge_subwords, 
             config=config, 
-            torch_dtype=torch.bfloat16
+            torch_dtype=torch_dtype,
             )
 
         classifier_path = os.path.join(args.cls_addr, "classifier.pt")
@@ -117,7 +140,7 @@ if __name__ == '__main__':
             raise ValueError("classifier does not exist in", classifier_path)
 
     elif args.model_class == "auto":
-        model = AutoModelForTokenClassification.from_pretrained(args.model_identifier_or_path, 
+        model = AutoModelForTokenClassification.from_pretrained(args.model_name_or_path, 
                                                                 num_labels=len(LABELS[args.dataset_name][args.task]),
                                                                 id2label={i: lab for (lab, i) in LABELS[args.dataset_name][args.task].items()},
                                                                 label2id=LABELS[args.dataset_name][args.task])

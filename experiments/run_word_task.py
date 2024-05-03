@@ -55,7 +55,7 @@ class ModelForWordTask(PreTrainedModel):
 
         self.dropout = nn.Dropout(classifier_dropout)
         self.num_labels = config.num_labels
-        self.classifier = nn.Linear(config.hidden_size, config.num_labels).bfloat16()
+        self.classifier = nn.Linear(config.hidden_size, config.num_labels).to(model_args.get("torch_dtype"))
 
         # Initialize weights and apply final processing
         self.post_init()
@@ -216,6 +216,46 @@ class ModelArguments:
             )
         },
     )
+    torch_dtype: Optional[str] = field(
+        default=None,
+        metadata={
+            "help": (
+                "Override the default `torch.dtype` and load the model under this dtype. If `auto` is passed, the "
+                "dtype will be automatically derived from the model's weights."
+            ),
+            "choices": ["auto", "bfloat16", "float16", "float32"],
+        },
+    )
+    attn_implementation: Optional[str] = field(
+        default="sdpa",
+        metadata={
+            "help": ("The attention implementation to use in the model."),
+            "choices": ["eager", "sdpa", "flash_attention_2"],
+        },
+    )
+    classifier_dropout: Optional[float] = field(
+        default=0.1,
+        metadata={"help": "The dropout rate for models"}
+    )
+    peft_addr: Optional[str] = field(
+        default=None,
+        metadata={"help": "addr of lora adapter weights"}
+    )
+    model_class: str = field(
+        default="custom",
+        metadata={
+            "help": "One of the items 'custom' or 'auto'. 'custom' for LLM2Vec models and 'auto' for pretrained encoders such as BERT.",
+            "choices": ["custom", "auto"]
+            }
+    )
+    merge_subwords: bool = field(
+        default=True,
+        metadata={"help": "Whether the representations of the subtokens get averaged."}
+    )
+    bidirectional: bool = field(
+        default=True,
+        metadata={"help": "Whether to use bidirectional attention."}
+    )
 
     def __post_init__(self):
         if self.config_overrides is not None and (self.config_name is not None or self.model_name_or_path is not None):
@@ -321,50 +361,27 @@ class CustomArguments:
     """
     Custom arguments for the script
     """
-
-    bidirectional: bool = field(
-        default=True,
-        metadata={"help": "Whether to use bidirectional attention."}
-    )
-
     stop_after_n_steps: int = field(
         default=10000,
         metadata={"help": "Stop training after n steps"}
     )
-
     data_collator_type: str = field(
         default="custom",
         metadata={"help": "The type of data collator. Options: custom, default, custom_no_random"}
     )
-
-    classifier_dropout: Optional[float] = field(
-        default=0.1,
-        metadata={"help": "The dropout rate for models"}
-    )
-
     task: Optional[str] = field(
-        default="pos_tag",
-        metadata={"help": "One of the 'pos_tags', 'chunk_tags', and 'ner_tags' choices"}
+        default="pos_tags",
+        metadata={
+            "help": "One of the 'pos_tags', 'chunk_tags', and 'ner_tags' choices",
+            "choices": ["pos_tags", "ner_tags", "chunk_tags"]
+            }
     )
-
-    peft_addr: Optional[str] = field(
-        default=None,
-        metadata={"help": "addr of lora adapter weights"}
-    )
-
     retroactive_labels: str = field(
         default="next_token",
-        metadata={"help": "Whether the tokens representations are used to predict the next token's labels. Options: same_token, next_word, next_token."}
-    )
-
-    model_class: str = field(
-        default="custom",
-        metadata={"help": "One of the items 'custom' or 'auto'. 'custom' for LLM2Vec models and 'auto' for pretrained encoders such as BERT."}
-    )
-
-    merge_subwords: bool = field(
-        default=True,
-        metadata={"help": "Whether the representations of the subtokens get averaged."}
+        metadata={
+            "help": "Whether the tokens representations are used to predict the next token's labels. Options: same_token, next_word, next_token.",
+            "choices": ["next_token", "same_token"]
+            }
     )
 
 
@@ -393,7 +410,20 @@ class WordTaskTrainer(Trainer):
 
 def main():
     parser = HfArgumentParser((ModelArguments, DataTrainingArguments, TrainingArguments, CustomArguments))
-    model_args, data_args, training_args, custom_args = parser.parse_args_into_dataclasses()
+    # model_args, data_args, training_args, custom_args = parser.parse_args_into_dataclasses()
+    if len(sys.argv) == 2 and sys.argv[1].endswith(".json"):
+        # If we pass only one argument to the script and it's the path to a json file,
+        # let's parse it to get our arguments.
+        model_args, data_args, training_args, custom_args = parser.parse_json_file(
+            json_file=os.path.abspath(sys.argv[1])
+        )
+    else:
+        (
+            model_args,
+            data_args,
+            training_args,
+            custom_args,
+        ) = parser.parse_args_into_dataclasses()
 
     if training_args.gradient_checkpointing:
         training_args.gradient_checkpointing_kwargs = {'use_reentrant': False}        
@@ -506,7 +536,7 @@ def main():
         "num_labels": len(LABELS[data_args.dataset_name][custom_args.task]),
         "id2label": {i: lab for (lab, i) in LABELS[data_args.dataset_name][custom_args.task].items()},
         "label2id": LABELS[data_args.dataset_name][custom_args.task],
-        "classifier_dropout": custom_args.classifier_dropout
+        "classifier_dropout": model_args.classifier_dropout
     }
 
     tokenizer_kwargs = {
@@ -532,12 +562,12 @@ def main():
 
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
-    if custom_args.model_class == "custom":
+    if model_args.model_class == "custom":
         tokenizer.model_input_names.append("token_type_ids")
-    if custom_args.model_class == "auto":
-        assert not custom_args.merge_subwords
+    if model_args.model_class == "auto":
+        assert not model_args.merge_subwords
         
-    if custom_args.model_class == "custom":
+    if model_args.model_class == "custom":
         if model_args.config_name:
             config = AutoConfig.from_pretrained(model_args.config_name, **config_kwargs)
         elif model_args.model_name_or_path:
@@ -548,26 +578,30 @@ def main():
         for k, v in config_kwargs.items():
             config.__setattr__(k, v)
 
+        torch_dtype = (
+            model_args.torch_dtype
+            if model_args.torch_dtype in ["auto", None]
+            else getattr(torch, model_args.torch_dtype)
+        )
         l2v = LLM2Vec.from_pretrained(
             base_model_name_or_path=model_args.model_name_or_path,
-            enable_bidirectional=custom_args.bidirectional,
-            peft_model_name_or_path=custom_args.peft_addr,
+            enable_bidirectional=model_args.bidirectional,
+            peft_model_name_or_path=model_args.peft_addr,
             merge_peft=False,
-            # TODO: Shift this to the argparse
-            torch_dtype=torch.bfloat16,
-            attn_implementation="flash_attention_2",
+            torch_dtype=torch_dtype,
+            attn_implementation=model_args.attn_implementation,
         )
 
         model = ModelForWordTask(
             model=l2v.model, 
-            merge_subwords=custom_args.merge_subwords, 
+            merge_subwords=model_args.merge_subwords, 
             config=config, 
-            torch_dtype=torch.bfloat16
+            torch_dtype=torch_dtype,
             )
         
         MyTrainer = WordTaskTrainer
 
-    elif custom_args.model_class == "auto":
+    elif model_args.model_class == "auto":
         model = AutoModelForTokenClassification.from_pretrained(model_args.model_name_or_path,
                                                                 num_labels=config_kwargs["num_labels"],
                                                                 id2label=config_kwargs["id2label"],
@@ -575,7 +609,7 @@ def main():
         MyTrainer = Trainer
 
     else:
-        raise ValueError(f"{custom_args.model_class} is not implemented. Only 'auto' and 'custom' model_class options are valid.")
+        raise ValueError(f"{model_args.model_class} is not implemented. Only 'auto' and 'custom' model_class options are valid.")
     
     # only train classifier
     for (n,p) in list(model.named_parameters()):
@@ -645,7 +679,7 @@ def main():
                 raise ValueError(f"retroactive_labels {custom_args.retroactive_labels} is not implemented.")
 
         tokenized_inputs["labels"] = labels
-        if custom_args.model_class == "custom":
+        if model_args.model_class == "custom":
             tokenized_inputs["token_type_ids"] = words
         return tokenized_inputs
     
