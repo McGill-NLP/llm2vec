@@ -12,7 +12,7 @@
     "data_collator_type": "default",
     "mlm_probability": 0.2,
     "overwrite_output_dir": true,
-    "output_dir": "output/mlm/Sheared-LLaMA-1.3B",
+    "output_dir": "output/mntp/Sheared-LLaMA-1.3B",
     "evaluation_strategy": "steps",
     "eval_steps": 100,
     "save_steps": 200,

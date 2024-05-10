@@ -12,7 +12,7 @@
     "data_collator_type": "default",
     "mlm_probability": 0.2,
     "overwrite_output_dir": true,
-    "output_dir": "output/mlm/Meta-Llama-3-8B-Instruct",
+    "output_dir": "output/mntp/Meta-Llama-3-8B-Instruct",
     "evaluation_strategy": "steps",
     "eval_steps": 100,
     "save_steps": 200,
