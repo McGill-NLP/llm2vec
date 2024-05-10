@@ -39,15 +39,15 @@ LLM2Vec class is a wrapper on top of HuggingFace models to support enabling bidi
 ### Preparing the model
 Initializing LLM2Vec model using pretrained LLMs is straightforward. The `from_pretrained` method of LLM2Vec takes a base model identifier/path and an optional PEFT model identifier/path. All HuggingFace model loading arguments can be passed to `from_pretrained` method. By default, the models are loaded with bidirectional connections enabled. This can be turned off by passing `enable_bidirectional=False` to the `from_pretrained` method.
 
-Here, we first initialize the Mistral MNTP base model and load the unsupervised-trained LoRA weights (trained with SimCSE objective and wiki corpus).
+Here, we first initialize the Llama-3 MNTP base model and load the unsupervised-trained LoRA weights (trained with SimCSE objective and wiki corpus).
 
 ```python
 import torch
 from llm2vec import LLM2Vec
 
 l2v = LLM2Vec.from_pretrained(
-    "McGill-NLP/LLM2Vec-Mistral-7B-Instruct-v2-mntp",
-    peft_model_name_or_path="McGill-NLP/LLM2Vec-Mistral-7B-Instruct-v2-mntp-unsup-simcse",
+    "McGill-NLP/LLM2Vec-Meta-Llama-3-8B-Instruct-mntp",
+    peft_model_name_or_path="McGill-NLP/LLM2Vec-Meta-Llama-3-8B-Instruct-mntp-unsup-simcse",
     device_map="cuda" if torch.cuda.is_available() else "cpu",
     torch_dtype=torch.bfloat16,
 )
@@ -60,8 +60,8 @@ import torch
 from llm2vec import LLM2Vec
 
 l2v = LLM2Vec.from_pretrained(
-    "McGill-NLP/LLM2Vec-Mistral-7B-Instruct-v2-mntp",
-    peft_model_name_or_path="McGill-NLP/LLM2Vec-Mistral-7B-Instruct-v2-mntp-supervised",
+    "McGill-NLP/LLM2Vec-Meta-Llama-3-8B-Instruct-v2-mntp",
+    peft_model_name_or_path="McGill-NLP/LLM2Vec-Meta-Llama-3-8B-Instruct-mntp-supervised",
     device_map="cuda" if torch.cuda.is_available() else "cpu",
     torch_dtype=torch.bfloat16,
 )
@@ -97,8 +97,8 @@ cos_sim = torch.mm(q_reps_norm, d_reps_norm.transpose(0, 1))
 
 print(cos_sim)
 """
-tensor([[0.5485, 0.0551],
-        [0.0565, 0.5425]])
+tensor([[0.6470, 0.1619],
+        [0.0786, 0.5844]])
 """
 ```
 
@@ -118,21 +118,21 @@ More examples of classification, clustering, sentence similarity etc are present
 
 ## Training 
 ### MNTP training
-To train the model with Masked Next Token Prediction (MNTP), you can use the `experiments/run_mntp.py` script. It is adapted from HuggingFace Masked Language Modeling (MLM) [script](https://github.com/huggingface/transformers/blob/51bcadc10a569847b93a30dbe3a077037ae63bad/examples/pytorch/language-modeling/run_mlm.py). To train the Mistral-7B model with MNTP, run the following command:
+To train the model with Masked Next Token Prediction (MNTP), you can use the `experiments/run_mntp.py` script. It is adapted from HuggingFace Masked Language Modeling (MLM) [script](https://github.com/huggingface/transformers/blob/51bcadc10a569847b93a30dbe3a077037ae63bad/examples/pytorch/language-modeling/run_mlm.py). To train the Meta-Llama-3-8B model with MNTP, run the following command:
 
 ```bash
-python experiments/run_mntp.py train_configs/mntp/Mistral.json
+python experiments/run_mntp.py train_configs/mntp/MetaLlama3.json
 ```
 
-The Mistral training configuration [file](train_configs/mntp/Mistral.json) contains all the training hyperparameters and configurations used in our paper. 
+The Meta-Llama-3-8B training configuration [file](train_configs/mntp/MetaLlama3.json) contains all the training hyperparameters and configurations used in our paper. 
 ```json
 {
-    "model_name_or_path": "mistralai/Mistral-7B-Instruct-v0.2",
+    "model_name_or_path": "meta-llama/Meta-Llama-3-8B-Instruct",
     "dataset_name": "wikitext",
     "dataset_config_name": "wikitext-103-raw-v1",
     "mask_token_type": "blank",
-    "data_collator_type": "all_mask",
-    "mlm_probability": 0.8,
+    "data_collator_type": "default",
+    "mlm_probability": 0.2,
     "lora_r": 16,
     "gradient_checkpointing": true,
     "torch_dtype": "bfloat16",
@@ -141,7 +141,7 @@ The Mistral training configuration [file](train_configs/mntp/Mistral.json) conta
 }
 ```
 
-Similar configurations are also available for[Meta-Llama-3-8B](train_configs/mntp/MetaLlama3.json), [Llama-2-7B](train_configs/mntp/Llama2.json), and [Sheared-Llama-1.3B](train_configs/mntp/Sheared-Llama.json) models.
+Similar configurations are also available for[Mistral-7B](train_configs/mntp/Mistral.json), [Llama-2-7B](train_configs/mntp/Llama2.json), and [Sheared-Llama-1.3B](train_configs/mntp/Sheared-Llama.json) models.
 
 ### Unsupervised contrastive training (SimCSE)
 COMING SOON
@@ -160,18 +160,18 @@ cache
 ```
 If the dataset is placed in a different directory, please change the `dataset_file_path` in the training configuration accordingly. 
 
-To train the Mistral-7B model with supervised contrastive learning, run the following command:
+To train the Meta-Llama-3-8B model with supervised contrastive learning, run the following command:
 
 ```bash
-torchrun --nproc_per_node=8 experiments/run_supervised.py train_configs/supervised/Mistral.json
+torchrun --nproc_per_node=8 experiments/run_supervised.py train_configs/supervised/MetaLlama3.json
 ```
 The number of GPUs can be changed by modifying the `--nproc_per_node` argument.
 
-The Mistral training configuration [file](train_configs/supervised/Mistral.json) contains all the training hyperparameters and configurations used in our paper. 
+The Mistral training configuration [file](train_configs/supervised/MetaLlama3.json) contains all the training hyperparameters and configurations used in our paper. 
 ```json
 {
-    "model_name_or_path": "mistralai/Mistral-7B-Instruct-v0.2",
-    "peft_model_name_or_path": "McGill-NLP/LLM2Vec-Mistral-7B-Instruct-v2-mntp",
+    "model_name_or_path": "meta-llama/Meta-Llama-3-8B-Instruct",
+    "peft_model_name_or_path": "McGill-NLP/LLM2Vec-Meta-Llama-3-8B-Instruct-mntp",
     "bidirectional": true,
     "pooling_mode": "mean",
     "dataset_name": "E5",
@@ -187,7 +187,7 @@ The Mistral training configuration [file](train_configs/supervised/Mistral.json)
     // ....
 }
 ```
-Similar configurations are also available for [Meta-Llama-3-8B](train_configs/supervised/MetaLlama3.json), [Llama-2-7B](train_configs/supervised/Llama2.json), and [Sheared-Llama-1.3B](train_configs/supervised/Sheared-Llama.json) models.
+Similar configurations are also available for [Mistral](train_configs/supervised/Mistral.json), [Llama-2-7B](train_configs/supervised/Llama2.json), and [Sheared-Llama-1.3B](train_configs/supervised/Sheared-Llama.json) models.
 
 
 ### Word-level tasks training
