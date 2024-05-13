@@ -155,7 +155,7 @@ class LLM2Vec(nn.Module):
         original_texts = []
         for text in texts:
             t = text.split("!@#$%^&*()")
-            texts_2.append(t[1])
+            texts_2.append(t[1] if len(t) > 1 else "")
             original_texts.append("".join(t))
 
         original = self.tokenizer(

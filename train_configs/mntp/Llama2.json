@@ -12,7 +12,7 @@
     "data_collator_type": "default",
     "mlm_probability": 0.2,
     "overwrite_output_dir": true,
-    "output_dir": "output/mlm/Llama-2-7b-chat-hf",
+    "output_dir": "output/mntp/Llama-2-7b-chat-hf",
     "evaluation_strategy": "steps",
     "eval_steps": 100,
     "save_steps": 200,

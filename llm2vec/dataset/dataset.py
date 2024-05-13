@@ -8,8 +8,8 @@ class DataSample:
     id_: int
     query: str
     positive: str
-    negative: str
-    task_name: str
+    negative: str = None
+    task_name: str = None
 
 class TrainSample:
     """
