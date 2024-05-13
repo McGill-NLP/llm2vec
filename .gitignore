@@ -7,3 +7,4 @@ output/**
 cache/**
 output/
 *.log
+cluster_scripts/**
