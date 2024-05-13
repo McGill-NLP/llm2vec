@@ -15,7 +15,7 @@
     "disable_tqdm": false,
     "max_seq_length": 128,
     "overwrite_output_dir": true,
-    "output_dir": "output/simcse/Mistral-7B-Instruct-v0.2",
+    "output_dir": "output/mntp-simcse/Mistral-7B-Instruct-v0.2",
     "logging_steps": 50,
     "save_steps": 200,
     "save_only_model": true,

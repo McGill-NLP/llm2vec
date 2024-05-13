@@ -15,7 +15,7 @@
     "disable_tqdm": false,
     "max_seq_length": 128,
     "overwrite_output_dir": true,
-    "output_dir": "output/simcse/Llama-2-7b-chat-hf",
+    "output_dir": "output/mntp-simcse/Llama-2-7b-chat-hf",
     "logging_steps": 50,
     "save_steps": 200,
     "save_only_model": true,
