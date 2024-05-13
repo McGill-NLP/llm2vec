@@ -144,13 +144,57 @@ The Meta-Llama-3-8B training configuration [file](train_configs/mntp/MetaLlama3.
 Similar configurations are also available for[Mistral-7B](train_configs/mntp/Mistral.json), [Llama-2-7B](train_configs/mntp/Llama2.json), and [Sheared-Llama-1.3B](train_configs/mntp/Sheared-Llama.json) models.
 
 ### Unsupervised contrastive training (SimCSE)
-COMING SOON
+For SimCSE training, we replicated the training procedure from [SimCSE](https://arxiv.org/abs/2104.08821) paper. For training, we use the dataset 1 million sentences from English Wikipedia released by the authors. It can be downloaded using the following command:
+
+```bash
+wget https://huggingface.co/datasets/princeton-nlp/datasets-for-simcse/resolve/main/wiki1m_for_simcse.txt
+```
+
+To use the training script with pre-set configurations, the downloaded file should be placed in the `cache` directory. The directory layout should be as follows:
+
+```
+cache
+└── wiki1m_for_simcse.txt
+```
+If the dataset is placed in a different directory, please change the dataset_file_path in the training configuration accordingly.
+
+To train the Meta-Llama-3-8B model with SimCSE, run the following command:
+
+```bash
+python experiments/run_simcse.py train_configs/simcse/MetaLlama3.json
+```
+
+The Meta-Llama-3-8B training configuration [file](train_configs/simcse/MetaLlama3.json) contains all the training hyperparameters and configurations used in our paper. 
+```json
+{
+    "model_name_or_path": "meta-llama/Meta-Llama-3-8B-Instruct",
+    "peft_model_name_or_path": "McGill-NLP/LLM2Vec-Meta-Llama-3-8B-Instruct-mntp",
+    "simcse_dropout": 0.3,
+    "bidirectional": true,
+    "pooling_mode": "mean",
+    "dataset_name": "Wiki1M",
+    "dataset_file_path": "cache/wiki1m_for_simcse.txt",
+    "learning_rate": 3e-5,
+    "loss_scale": 20,
+    "per_device_train_batch_size": 128,
+    "max_seq_length": 128,
+    "stop_after_n_steps": 1000,
+    "lora_r": 16,
+    "gradient_checkpointing": true,
+    "torch_dtype": "bfloat16",
+    "attn_implementation": "flash_attention_2",
+    // ....
+}
+```
+
+Similar configurations are also available for [Mistral](train_configs/simcse/Mistral.json), [Llama-2-7B](train_configs/simcse/Llama2.json), and [Sheared-Llama-1.3B](train_configs/simcse/Sheared-Llama.json) models.
 
 ### Supervised contrastive training
 For supervised contrastive training, we use the public portion of dataset used in [Improving Text Embeddings with Large Language Models](https://arxiv.org/abs/2401.00368), curated by authors of [Repetition Improves Language Model Embeddings](https://arxiv.org/abs/2402.15449). The dataset can be downloaded from the [GitHub page of Echo embeddings repository](https://github.com/jakespringer/echo-embeddings#training). To use the training script, the downloaded dataset should be placed in the `cache` directory. The directory layout should be as follows:
 
 ```
 cache
+|── wiki1m_for_simcse.txt
 └── echo-data
     ├── allnli_split1.jsonl
     ├── allnli_split2.jsonl
@@ -167,7 +211,7 @@ torchrun --nproc_per_node=8 experiments/run_supervised.py train_configs/supervis
 ```
 The number of GPUs can be changed by modifying the `--nproc_per_node` argument.
 
-The Mistral training configuration [file](train_configs/supervised/MetaLlama3.json) contains all the training hyperparameters and configurations used in our paper. 
+The Meta-Llama-3-8B training configuration [file](train_configs/supervised/MetaLlama3.json) contains all the training hyperparameters and configurations used in our paper. 
 ```json
 {
     "model_name_or_path": "meta-llama/Meta-Llama-3-8B-Instruct",
