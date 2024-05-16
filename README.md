@@ -60,7 +60,7 @@ import torch
 from llm2vec import LLM2Vec
 
 l2v = LLM2Vec.from_pretrained(
-    "McGill-NLP/LLM2Vec-Meta-Llama-3-8B-Instruct-v2-mntp",
+    "McGill-NLP/LLM2Vec-Meta-Llama-3-8B-Instruct-mntp",
     peft_model_name_or_path="McGill-NLP/LLM2Vec-Meta-Llama-3-8B-Instruct-mntp-supervised",
     device_map="cuda" if torch.cuda.is_available() else "cpu",
     torch_dtype=torch.bfloat16,
