@@ -73,6 +73,8 @@ class ModifiedMistralDecoderLayer(MistralDecoderLayer):
 
 
 class MistralBiModel(MistralModel):
+    _no_split_modules = ["ModifiedMistralDecoderLayer"]
+
     def __init__(self, config: MistralConfig):
         MistralPreTrainedModel.__init__(self, config)
         self.padding_idx = config.pad_token_id

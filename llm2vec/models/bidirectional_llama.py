@@ -83,6 +83,8 @@ class ModifiedLlamaDecoderLayer(LlamaDecoderLayer):
 
 
 class LlamaBiModel(LlamaModel):
+    _no_split_modules = ["ModifiedLlamaDecoderLayer"]
+
     def __init__(self, config: LlamaConfig):
         if not is_transformers_attn_greater_or_equal_4_38():
             raise ValueError(
