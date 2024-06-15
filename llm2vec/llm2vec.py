@@ -291,7 +291,7 @@ class LLM2Vec(nn.Module):
             the default is to use cuda when available, otherwise cpu. Note that only the choice of 'cuda' supports
             multiprocessing as currently implemented.
 
-        Returns: embeddings of the sentences.
+        Returns: embeddings of the sentences. Embeddings are detached and always on the CPU (see _encode implementation).
 
         """
         if isinstance(sentences[0], str) and isinstance(sentences[-1], int):
