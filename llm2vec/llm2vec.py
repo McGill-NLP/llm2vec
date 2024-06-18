@@ -21,6 +21,7 @@ from transformers import (
 from .models import (
     MistralBiModel,
     LlamaBiModel,
+    GemmaBiModel,
 )
 
 logger = logging.getLogger(__name__)
@@ -63,6 +64,8 @@ class LLM2Vec(nn.Module):
             return MistralBiModel
         elif config_class_name == "LlamaConfig":
             return LlamaBiModel
+        elif config_class_name == "GemmaConfig":
+            return GemmaBiModel
         else:
             raise ValueError(
                 f"{config_class_name} is not supported yet with bidirectional models."
