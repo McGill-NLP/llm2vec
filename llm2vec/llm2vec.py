@@ -271,7 +271,7 @@ class LLM2Vec(nn.Module):
             )
             tokenized_q_length = len(tokenized_q["input_ids"][0])
 
-        return f"{instruction.strip()} !@#$%^&*(){text}"
+        return f"{instruction.strip()} !@#$%^&*(){text}" if instruction else f"!@#$%^&*(){text}"
 
     def encode(
         self,
