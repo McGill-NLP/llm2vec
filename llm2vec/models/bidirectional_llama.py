@@ -32,6 +32,7 @@ def is_transformers_attn_greater_or_equal_4_38():
         "4.38.0"
     )
 
+
 def is_transformers_attn_greater_or_equal_4_40():
     if not _is_package_available("transformers"):
         return False
@@ -109,7 +110,14 @@ class LlamaBiModel(LlamaModel):
         # Initialize weights and apply final processing
         self.post_init()
 
-    def _update_causal_mask(self, attention_mask, input_tensor, cache_position, past_seen_tokens=None, output_attentions=False):
+    def _update_causal_mask(
+        self,
+        attention_mask,
+        input_tensor,
+        cache_position,
+        past_seen_tokens=None,
+        output_attentions=False,
+    ):
         if self.config._attn_implementation == "flash_attention_2":
             if attention_mask is not None and 0.0 in attention_mask:
                 return attention_mask
@@ -134,7 +142,11 @@ class LlamaBiModel(LlamaModel):
             target_length = (
                 attention_mask.shape[-1]
                 if isinstance(attention_mask, torch.Tensor)
-                else (cache_position[-1] + 1 if not is_transformers_attn_greater_or_equal_4_40() else past_seen_tokens + sequence_length + 1)
+                else (
+                    cache_position[-1] + 1
+                    if not is_transformers_attn_greater_or_equal_4_40()
+                    else past_seen_tokens + sequence_length + 1
+                )
             )
 
         causal_mask = torch.zeros(

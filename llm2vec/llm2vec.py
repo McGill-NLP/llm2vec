@@ -271,7 +271,11 @@ class LLM2Vec(nn.Module):
             )
             tokenized_q_length = len(tokenized_q["input_ids"][0])
 
-        return f"{instruction.strip()} !@#$%^&*(){text}" if instruction else f"!@#$%^&*(){text}"
+        return (
+            f"{instruction.strip()} !@#$%^&*(){text}"
+            if instruction
+            else f"!@#$%^&*(){text}"
+        )
 
     def encode(
         self,
@@ -304,7 +308,7 @@ class LLM2Vec(nn.Module):
             sentences = [[""] + [sentence] for sentence in sentences]
 
         if device is None:
-                device = "cuda" if torch.cuda.is_available() else "cpu"
+            device = "cuda" if torch.cuda.is_available() else "cpu"
 
         concatenated_input_texts = []
         for sentence in sentences:
@@ -392,7 +396,13 @@ class LLM2Vec(nn.Module):
             with open(f"{output_path}/llm2vec_config.json", "w") as fOut:
                 json.dump(llm2vec_config, fOut, indent=4)
 
-    def _encode(self, sentences_batch, device:Optional[str]=None, convert_to_numpy:bool=False, multiprocessing=False):
+    def _encode(
+        self,
+        sentences_batch,
+        device: Optional[str] = None,
+        convert_to_numpy: bool = False,
+        multiprocessing=False,
+    ):
         if multiprocessing:
             # multiprocessing only supports CUDA devices at this time, so we ignore the value of device
             # and use cuda:rank for the device

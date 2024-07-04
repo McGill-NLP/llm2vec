@@ -1,6 +1,7 @@
 """
 The script is adapted from https://huggingface.co/docs/transformers/en/tasks/token_classification
 """
+
 import logging
 import os
 import sys
@@ -28,7 +29,7 @@ from transformers import (
     TrainerCallback,
     set_seed,
     AutoModelForTokenClassification,
-    DataCollatorForTokenClassification
+    DataCollatorForTokenClassification,
 )
 
 from transformers.modeling_outputs import TokenClassifierOutput
@@ -37,7 +38,11 @@ from transformers.utils.versions import require_version
 
 from llm2vec import LLM2Vec
 
-require_version("datasets>=1.8.0", "To fix: pip install -r examples/pytorch/language-modeling/requirements.txt")
+require_version(
+    "datasets>=1.8.0",
+    "To fix: pip install -r examples/pytorch/language-modeling/requirements.txt",
+)
+
 
 class ModelForWordTask(PreTrainedModel):
     def __init__(self, config, model, merge_subwords=False, **model_args):
@@ -45,7 +50,10 @@ class ModelForWordTask(PreTrainedModel):
         self.model = model
         self.merge_subwords = merge_subwords
 
-        if hasattr(config, "classifier_dropout") and config.classifier_dropout is not None:
+        if (
+            hasattr(config, "classifier_dropout")
+            and config.classifier_dropout is not None
+        ):
             classifier_dropout = config.classifier_dropout
         elif hasattr(config, "hidden_dropout") and config.hidden_dropout is not None:
             classifier_dropout = config.hidden_dropout
@@ -54,7 +62,9 @@ class ModelForWordTask(PreTrainedModel):
 
         self.dropout = nn.Dropout(classifier_dropout)
         self.num_labels = config.num_labels
-        self.classifier = nn.Linear(config.hidden_size, config.num_labels).to(model_args.get("torch_dtype"))
+        self.classifier = nn.Linear(config.hidden_size, config.num_labels).to(
+            model_args.get("torch_dtype")
+        )
 
         # Initialize weights and apply final processing
         self.post_init()
@@ -63,8 +73,10 @@ class ModelForWordTask(PreTrainedModel):
         new_hidden_states = hidden_states.clone()
         for b in range(hidden_states.shape[0]):
             for w in torch.arange(0, token_type_ids[b].max() + 1):
-                words_w = (token_type_ids[b] == w) * (attention_mask[b]>0)
-                new_hidden_states[b][words_w] = torch.mean(hidden_states[b][words_w], dim=0).repeat(sum(words_w), 1)
+                words_w = (token_type_ids[b] == w) * (attention_mask[b] > 0)
+                new_hidden_states[b][words_w] = torch.mean(
+                    hidden_states[b][words_w], dim=0
+                ).repeat(sum(words_w), 1)
         return new_hidden_states
 
     def forward(
@@ -80,14 +92,22 @@ class ModelForWordTask(PreTrainedModel):
         return_dict: Optional[bool] = None,
         token_type_ids: Optional[torch.LongTensor] = None,
         head_mask: Optional[torch.FloatTensor] = None,
-        labels: Optional[torch.LongTensor] = None
+        labels: Optional[torch.LongTensor] = None,
     ) -> Union[Tuple, TokenClassifierOutput]:
-        output_attentions = output_attentions if output_attentions is not None else self.config.output_attentions
+        output_attentions = (
+            output_attentions
+            if output_attentions is not None
+            else self.config.output_attentions
+        )
         output_hidden_states = (
-            output_hidden_states if output_hidden_states is not None else self.config.output_hidden_states
+            output_hidden_states
+            if output_hidden_states is not None
+            else self.config.output_hidden_states
         )
 
-        return_dict = return_dict if return_dict is not None else self.config.use_return_dict
+        return_dict = (
+            return_dict if return_dict is not None else self.config.use_return_dict
+        )
 
         # decoder outputs consists of (dec_features, layer_state, dec_hidden, dec_attn)
         outputs = self.model(
@@ -105,7 +125,9 @@ class ModelForWordTask(PreTrainedModel):
         hidden_states = outputs[0]
 
         if self.merge_subwords:
-            hidden_states = self._merge_subwords(hidden_states, token_type_ids, attention_mask)
+            hidden_states = self._merge_subwords(
+                hidden_states, token_type_ids, attention_mask
+            )
 
         hidden_states = self.dropout(hidden_states)
         logits = self.classifier(hidden_states)
@@ -127,32 +149,110 @@ class ModelForWordTask(PreTrainedModel):
             attentions=outputs.attentions,
         )
 
+
 logger = logging.getLogger(__name__)
 MODEL_CONFIG_CLASSES = list(MODEL_FOR_MASKED_LM_MAPPING.keys())
 MODEL_TYPES = tuple(conf.model_type for conf in MODEL_CONFIG_CLASSES)
 LABELS = {
     "conll2003": {
-        "pos_tags": {'"': 0, "''": 1, '#': 2, '$': 3, '(': 4, ')': 5, ',': 6, '.': 7, ':': 8, '``': 9, 'CC': 10, 'CD': 11, 'DT': 12,
-                    'EX': 13, 'FW': 14, 'IN': 15, 'JJ': 16, 'JJR': 17, 'JJS': 18, 'LS': 19, 'MD': 20, 'NN': 21, 'NNP': 22, 'NNPS': 23,
-                    'NNS': 24, 'NN|SYM': 25, 'PDT': 26, 'POS': 27, 'PRP': 28, 'PRP$': 29, 'RB': 30, 'RBR': 31, 'RBS': 32, 'RP': 33,
-                    'SYM': 34, 'TO': 35, 'UH': 36, 'VB': 37, 'VBD': 38, 'VBG': 39, 'VBN': 40, 'VBP': 41, 'VBZ': 42, 'WDT': 43,
-                    'WP': 44, 'WP$': 45, 'WRB': 46},
-        "chunk_tags": {'O': 0, 'B-ADJP': 1, 'I-ADJP': 2, 'B-ADVP': 3, 'I-ADVP': 4, 'B-CONJP': 5, 'I-CONJP': 6, 'B-INTJ': 7, 'I-INTJ': 8,
-                    'B-LST': 9, 'I-LST': 10, 'B-NP': 11, 'I-NP': 12, 'B-PP': 13, 'I-PP': 14, 'B-PRT': 15, 'I-PRT': 16, 'B-SBAR': 17,
-                    'I-SBAR': 18, 'B-UCP': 19, 'I-UCP': 20, 'B-VP': 21, 'I-VP': 22},
-        "ner_tags": {'O': 0, 'B-PER': 1, 'I-PER': 2, 'B-ORG': 3, 'I-ORG': 4, 'B-LOC': 5, 'I-LOC': 6, 'B-MISC': 7, 'I-MISC': 8}
+        "pos_tags": {
+            '"': 0,
+            "''": 1,
+            "#": 2,
+            "$": 3,
+            "(": 4,
+            ")": 5,
+            ",": 6,
+            ".": 7,
+            ":": 8,
+            "``": 9,
+            "CC": 10,
+            "CD": 11,
+            "DT": 12,
+            "EX": 13,
+            "FW": 14,
+            "IN": 15,
+            "JJ": 16,
+            "JJR": 17,
+            "JJS": 18,
+            "LS": 19,
+            "MD": 20,
+            "NN": 21,
+            "NNP": 22,
+            "NNPS": 23,
+            "NNS": 24,
+            "NN|SYM": 25,
+            "PDT": 26,
+            "POS": 27,
+            "PRP": 28,
+            "PRP$": 29,
+            "RB": 30,
+            "RBR": 31,
+            "RBS": 32,
+            "RP": 33,
+            "SYM": 34,
+            "TO": 35,
+            "UH": 36,
+            "VB": 37,
+            "VBD": 38,
+            "VBG": 39,
+            "VBN": 40,
+            "VBP": 41,
+            "VBZ": 42,
+            "WDT": 43,
+            "WP": 44,
+            "WP$": 45,
+            "WRB": 46,
+        },
+        "chunk_tags": {
+            "O": 0,
+            "B-ADJP": 1,
+            "I-ADJP": 2,
+            "B-ADVP": 3,
+            "I-ADVP": 4,
+            "B-CONJP": 5,
+            "I-CONJP": 6,
+            "B-INTJ": 7,
+            "I-INTJ": 8,
+            "B-LST": 9,
+            "I-LST": 10,
+            "B-NP": 11,
+            "I-NP": 12,
+            "B-PP": 13,
+            "I-PP": 14,
+            "B-PRT": 15,
+            "I-PRT": 16,
+            "B-SBAR": 17,
+            "I-SBAR": 18,
+            "B-UCP": 19,
+            "I-UCP": 20,
+            "B-VP": 21,
+            "I-VP": 22,
+        },
+        "ner_tags": {
+            "O": 0,
+            "B-PER": 1,
+            "I-PER": 2,
+            "B-ORG": 3,
+            "I-ORG": 4,
+            "B-LOC": 5,
+            "I-LOC": 6,
+            "B-MISC": 7,
+            "I-MISC": 8,
+        },
     }
 }
+
 
 @dataclass
 class ModelArguments:
     """
     Arguments pertaining to which model/config/tokenizer we are going to fine-tune, or train from scratch.
     """
+
     model_name_or_path: Optional[str] = field(
         default=None,
-        metadata={
-        },
+        metadata={},
     )
     config_overrides: Optional[str] = field(
         default=None,
@@ -164,22 +264,34 @@ class ModelArguments:
         },
     )
     config_name: Optional[str] = field(
-        default=None, metadata={"help": "Pretrained config name or path if not the same as model_name"}
+        default=None,
+        metadata={
+            "help": "Pretrained config name or path if not the same as model_name"
+        },
     )
     tokenizer_name: Optional[str] = field(
-        default=None, metadata={"help": "Pretrained tokenizer name or path if not the same as model_name"}
+        default=None,
+        metadata={
+            "help": "Pretrained tokenizer name or path if not the same as model_name"
+        },
     )
     cache_dir: Optional[str] = field(
         default=None,
-        metadata={"help": "Where do you want to store the pretrained models downloaded from huggingface.co"},
+        metadata={
+            "help": "Where do you want to store the pretrained models downloaded from huggingface.co"
+        },
     )
     use_fast_tokenizer: bool = field(
         default=True,
-        metadata={"help": "Whether to use one of the fast tokenizer (backed by the tokenizers library) or not."},
+        metadata={
+            "help": "Whether to use one of the fast tokenizer (backed by the tokenizers library) or not."
+        },
     )
     model_revision: str = field(
         default="main",
-        metadata={"help": "The specific model version to use (can be a branch name, tag name or commit id)."},
+        metadata={
+            "help": "The specific model version to use (can be a branch name, tag name or commit id)."
+        },
     )
     token: str = field(
         default=None,
@@ -233,31 +345,30 @@ class ModelArguments:
         },
     )
     classifier_dropout: Optional[float] = field(
-        default=0.1,
-        metadata={"help": "The dropout rate for models"}
+        default=0.1, metadata={"help": "The dropout rate for models"}
     )
     peft_addr: Optional[str] = field(
-        default=None,
-        metadata={"help": "addr of lora adapter weights"}
+        default=None, metadata={"help": "addr of lora adapter weights"}
     )
     model_class: str = field(
         default="custom",
         metadata={
             "help": "One of the items 'custom' or 'auto'. 'custom' for LLM2Vec models and 'auto' for pretrained encoders such as BERT.",
-            "choices": ["custom", "auto"]
-            }
+            "choices": ["custom", "auto"],
+        },
     )
     merge_subwords: bool = field(
         default=True,
-        metadata={"help": "Whether the representations of the subtokens get averaged."}
+        metadata={"help": "Whether the representations of the subtokens get averaged."},
     )
     bidirectional: bool = field(
-        default=True,
-        metadata={"help": "Whether to use bidirectional attention."}
+        default=True, metadata={"help": "Whether to use bidirectional attention."}
     )
 
     def __post_init__(self):
-        if self.config_overrides is not None and (self.config_name is not None or self.model_name_or_path is not None):
+        if self.config_overrides is not None and (
+            self.config_name is not None or self.model_name_or_path is not None
+        ):
             raise ValueError(
                 "--config_overrides can't be used in combination with --config_name or --model_name_or_path"
             )
@@ -270,18 +381,27 @@ class DataTrainingArguments:
     """
 
     dataset_name: Optional[str] = field(
-        default=None, metadata={"help": "The name of the dataset to use (via the datasets library)."}
+        default=None,
+        metadata={"help": "The name of the dataset to use (via the datasets library)."},
     )
     dataset_config_name: Optional[str] = field(
-        default=None, metadata={"help": "The configuration name of the dataset to use (via the datasets library)."}
+        default=None,
+        metadata={
+            "help": "The configuration name of the dataset to use (via the datasets library)."
+        },
     )
-    train_file: Optional[str] = field(default=None, metadata={"help": "The input training data file (a text file)."})
+    train_file: Optional[str] = field(
+        default=None, metadata={"help": "The input training data file (a text file)."}
+    )
     validation_file: Optional[str] = field(
         default=None,
-        metadata={"help": "An optional input evaluation data file to evaluate the perplexity on (a text file)."},
+        metadata={
+            "help": "An optional input evaluation data file to evaluate the perplexity on (a text file)."
+        },
     )
     overwrite_cache: bool = field(
-        default=True, metadata={"help": "Overwrite the cached training and evaluation sets"}
+        default=True,
+        metadata={"help": "Overwrite the cached training and evaluation sets"},
     )
     validation_split_percentage: Optional[int] = field(
         default=5,
@@ -303,11 +423,14 @@ class DataTrainingArguments:
         metadata={"help": "The number of processes to use for the preprocessing."},
     )
     mlm_probability: float = field(
-        default=0.15, metadata={"help": "Ratio of tokens to mask for masked language modeling loss"}
+        default=0.15,
+        metadata={"help": "Ratio of tokens to mask for masked language modeling loss"},
     )
     line_by_line: bool = field(
         default=False,
-        metadata={"help": "Whether distinct lines of text in the dataset are to be handled as distinct sequences."},
+        metadata={
+            "help": "Whether distinct lines of text in the dataset are to be handled as distinct sequences."
+        },
     )
     pad_to_max_length: bool = field(
         default=False,
@@ -340,19 +463,32 @@ class DataTrainingArguments:
 
     def __post_init__(self):
         if self.streaming:
-            require_version("datasets>=2.0.0", "The streaming feature requires `datasets>=2.0.0`")
+            require_version(
+                "datasets>=2.0.0", "The streaming feature requires `datasets>=2.0.0`"
+            )
 
-        if self.dataset_name is None and self.train_file is None and self.validation_file is None:
-            raise ValueError("Need either a dataset name or a training/validation file.")
+        if (
+            self.dataset_name is None
+            and self.train_file is None
+            and self.validation_file is None
+        ):
+            raise ValueError(
+                "Need either a dataset name or a training/validation file."
+            )
         else:
             if self.train_file is not None:
                 extension = self.train_file.split(".")[-1]
                 if extension not in ["csv", "json", "txt"]:
-                    raise ValueError("`train_file` should be a csv, a json or a txt file.")
+                    raise ValueError(
+                        "`train_file` should be a csv, a json or a txt file."
+                    )
             if self.validation_file is not None:
                 extension = self.validation_file.split(".")[-1]
                 if extension not in ["csv", "json", "txt"]:
-                    raise ValueError("`validation_file` should be a csv, a json or a txt file.")
+                    raise ValueError(
+                        "`validation_file` should be a csv, a json or a txt file."
+                    )
+
 
 # add more arguments
 @dataclass
@@ -360,27 +496,29 @@ class CustomArguments:
     """
     Custom arguments for the script
     """
+
     stop_after_n_steps: int = field(
-        default=10000,
-        metadata={"help": "Stop training after n steps"}
+        default=10000, metadata={"help": "Stop training after n steps"}
     )
     data_collator_type: str = field(
         default="custom",
-        metadata={"help": "The type of data collator. Options: custom, default, custom_no_random"}
+        metadata={
+            "help": "The type of data collator. Options: custom, default, custom_no_random"
+        },
     )
     task: Optional[str] = field(
         default="pos_tags",
         metadata={
             "help": "One of the 'pos_tags', 'chunk_tags', and 'ner_tags' choices",
-            "choices": ["pos_tags", "ner_tags", "chunk_tags"]
-            }
+            "choices": ["pos_tags", "ner_tags", "chunk_tags"],
+        },
     )
     retroactive_labels: str = field(
         default="next_token",
         metadata={
             "help": "Whether the tokens representations are used to predict the next token's labels. Options: same_token, next_word, next_token.",
-            "choices": ["next_token", "same_token"]
-            }
+            "choices": ["next_token", "same_token"],
+        },
     )
 
 
@@ -400,7 +538,7 @@ class WordTaskTrainer(Trainer):
         os.makedirs(output_dir, exist_ok=True)
         logger.info(f"Saving model checkpoint to {output_dir}")
 
-        torch.save(self.model.classifier, os.path.join(output_dir, 'classifier.pt'))
+        torch.save(self.model.classifier, os.path.join(output_dir, "classifier.pt"))
         self.tokenizer.save_pretrained(output_dir)
 
         # Good practice: save your training arguments together with the trained model
@@ -408,7 +546,9 @@ class WordTaskTrainer(Trainer):
 
 
 def main():
-    parser = HfArgumentParser((ModelArguments, DataTrainingArguments, TrainingArguments, CustomArguments))
+    parser = HfArgumentParser(
+        (ModelArguments, DataTrainingArguments, TrainingArguments, CustomArguments)
+    )
     # model_args, data_args, training_args, custom_args = parser.parse_args_into_dataclasses()
     if len(sys.argv) == 2 and sys.argv[1].endswith(".json"):
         # If we pass only one argument to the script and it's the path to a json file,
@@ -425,7 +565,7 @@ def main():
         ) = parser.parse_args_into_dataclasses()
 
     if training_args.gradient_checkpointing:
-        training_args.gradient_checkpointing_kwargs = {'use_reentrant': False}        
+        training_args.gradient_checkpointing_kwargs = {"use_reentrant": False}
 
     if model_args.use_auth_token is not None:
         warnings.warn(
@@ -433,7 +573,9 @@ def main():
             FutureWarning,
         )
         if model_args.token is not None:
-            raise ValueError("`token` and `use_auth_token` are both specified. Please set only the argument `token`.")
+            raise ValueError(
+                "`token` and `use_auth_token` are both specified. Please set only the argument `token`."
+            )
         model_args.token = model_args.use_auth_token
 
     # Sending telemetry. Tracking the example usage helps us better allocate resources to maintain them. The
@@ -529,13 +671,19 @@ def main():
                 token=model_args.token,
             )
 
-    assert data_args.dataset_name in LABELS and custom_args.task in LABELS[data_args.dataset_name], f"LABELS[{data_args.dataset_name}][{custom_args.task}] is not defined."
+    assert (
+        data_args.dataset_name in LABELS
+        and custom_args.task in LABELS[data_args.dataset_name]
+    ), f"LABELS[{data_args.dataset_name}][{custom_args.task}] is not defined."
 
     config_kwargs = {
         "num_labels": len(LABELS[data_args.dataset_name][custom_args.task]),
-        "id2label": {i: lab for (lab, i) in LABELS[data_args.dataset_name][custom_args.task].items()},
+        "id2label": {
+            i: lab
+            for (lab, i) in LABELS[data_args.dataset_name][custom_args.task].items()
+        },
         "label2id": LABELS[data_args.dataset_name][custom_args.task],
-        "classifier_dropout": model_args.classifier_dropout
+        "classifier_dropout": model_args.classifier_dropout,
     }
 
     tokenizer_kwargs = {
@@ -548,11 +696,15 @@ def main():
     if model_args.tokenizer_name:
         if "gpt" in model_args.tokenizer_name:
             tokenizer_kwargs["add_prefix_space"] = True
-        tokenizer = AutoTokenizer.from_pretrained(model_args.tokenizer_name, **tokenizer_kwargs)
+        tokenizer = AutoTokenizer.from_pretrained(
+            model_args.tokenizer_name, **tokenizer_kwargs
+        )
     elif model_args.model_name_or_path:
         if "gpt" in model_args.model_name_or_path:
             tokenizer_kwargs["add_prefix_space"] = True
-        tokenizer = AutoTokenizer.from_pretrained(model_args.model_name_or_path, **tokenizer_kwargs)
+        tokenizer = AutoTokenizer.from_pretrained(
+            model_args.model_name_or_path, **tokenizer_kwargs
+        )
     else:
         raise ValueError(
             "You are instantiating a new tokenizer from scratch. This is not supported by this script. "
@@ -565,14 +717,16 @@ def main():
         tokenizer.model_input_names.append("token_type_ids")
     if model_args.model_class == "auto":
         assert not model_args.merge_subwords
-        
+
     if model_args.model_class == "custom":
         if model_args.config_name:
             config = AutoConfig.from_pretrained(model_args.config_name, **config_kwargs)
         elif model_args.model_name_or_path:
-            config = AutoConfig.from_pretrained(model_args.model_name_or_path, **config_kwargs)
+            config = AutoConfig.from_pretrained(
+                model_args.model_name_or_path, **config_kwargs
+            )
         else:
-            raise ValueError('Invalid config loading')
+            raise ValueError("Invalid config loading")
 
         for k, v in config_kwargs.items():
             config.__setattr__(k, v)
@@ -592,26 +746,30 @@ def main():
         )
 
         model = ModelForWordTask(
-            model=l2v.model, 
-            merge_subwords=model_args.merge_subwords, 
-            config=config, 
+            model=l2v.model,
+            merge_subwords=model_args.merge_subwords,
+            config=config,
             torch_dtype=torch_dtype,
-            )
-        
+        )
+
         MyTrainer = WordTaskTrainer
 
     elif model_args.model_class == "auto":
-        model = AutoModelForTokenClassification.from_pretrained(model_args.model_name_or_path,
-                                                                num_labels=config_kwargs["num_labels"],
-                                                                id2label=config_kwargs["id2label"],
-                                                                label2id=config_kwargs["label2id"])
+        model = AutoModelForTokenClassification.from_pretrained(
+            model_args.model_name_or_path,
+            num_labels=config_kwargs["num_labels"],
+            id2label=config_kwargs["id2label"],
+            label2id=config_kwargs["label2id"],
+        )
         MyTrainer = Trainer
 
     else:
-        raise ValueError(f"{model_args.model_class} is not implemented. Only 'auto' and 'custom' model_class options are valid.")
-    
+        raise ValueError(
+            f"{model_args.model_class} is not implemented. Only 'auto' and 'custom' model_class options are valid."
+        )
+
     # only train classifier
-    for (n,p) in list(model.named_parameters()):
+    for n, p in list(model.named_parameters()):
         if "classifier" in n:
             p.requires_grad = True
         else:
@@ -637,7 +795,13 @@ def main():
     def tokenize_and_align_labels(examples):
         task = custom_args.task
         padding = "max_length" if data_args.pad_to_max_length else False
-        tokenized_inputs = tokenizer(examples["tokens"], truncation=True, is_split_into_words=True, padding=padding, max_length=max_seq_length)
+        tokenized_inputs = tokenizer(
+            examples["tokens"],
+            truncation=True,
+            is_split_into_words=True,
+            padding=padding,
+            max_length=max_seq_length,
+        )
 
         labels = []
         words = []
@@ -675,27 +839,43 @@ def main():
                 word_ids = [-1 if w is None else w for w in word_ids]
                 words.append(word_ids)
             else:
-                raise ValueError(f"retroactive_labels {custom_args.retroactive_labels} is not implemented.")
+                raise ValueError(
+                    f"retroactive_labels {custom_args.retroactive_labels} is not implemented."
+                )
 
         tokenized_inputs["labels"] = labels
         if model_args.model_class == "custom":
             tokenized_inputs["token_type_ids"] = words
         return tokenized_inputs
-    
-    tokenized_dataset = raw_datasets.map(tokenize_and_align_labels, batched=True, remove_columns=list(LABELS[data_args.dataset_name].keys())+["tokens", "id"], load_from_cache_file=not data_args.overwrite_cache)
+
+    tokenized_dataset = raw_datasets.map(
+        tokenize_and_align_labels,
+        batched=True,
+        remove_columns=list(LABELS[data_args.dataset_name].keys()) + ["tokens", "id"],
+        load_from_cache_file=not data_args.overwrite_cache,
+    )
     data_collator = DataCollatorForTokenClassification(tokenizer=tokenizer)
     seqeval = evaluate.load("seqeval")
+
     def compute_metrics(p):
         predictions, labels = p
         predictions = predictions[0]
         predictions = np.argmax(predictions, axis=2)
 
         true_predictions = [
-            [config_kwargs["id2label"][p] for (p, l) in zip(prediction, label) if l != -100]
+            [
+                config_kwargs["id2label"][p]
+                for (p, l) in zip(prediction, label)
+                if l != -100
+            ]
             for prediction, label in zip(predictions, labels)
         ]
         true_labels = [
-            [config_kwargs["id2label"][l] for (p, l) in zip(prediction, label) if l != -100]
+            [
+                config_kwargs["id2label"][l]
+                for (p, l) in zip(prediction, label)
+                if l != -100
+            ]
             for prediction, label in zip(predictions, labels)
         ]
 
