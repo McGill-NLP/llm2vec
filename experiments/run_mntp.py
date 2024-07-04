@@ -53,8 +53,8 @@ from transformers.utils.versions import require_version
 from peft import LoraConfig, get_peft_model
 
 from llm2vec.models import (
-    MistralBiForMNTP, 
-    LlamaBiForMNTP, 
+    MistralBiForMNTP,
+    LlamaBiForMNTP,
     GemmaBiForMNTP,
     Qwen2BiForMNTP,
 )

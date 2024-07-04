@@ -151,20 +151,12 @@ class LLM2Vec(nn.Module):
         if self.model.config._name_or_path in [
             "google/gemma-2-9b-it",
         ]:
-            text = (
-                "<bos><start_of_turn>user\n"
-                + text.strip()
-                + "<end_of_turn>"
-            )
+            text = "<bos><start_of_turn>user\n" + text.strip() + "<end_of_turn>"
         if self.model.config._name_or_path in [
             "Qwen/Qwen2-1.5B-Instruct",
             "Qwen/Qwen2-7B-Instruct",
         ]:
-            text = (
-                "<|im_start|>user\n"
-                + text.strip()
-                + "<|im_end|>"
-            )
+            text = "<|im_start|>user\n" + text.strip() + "<|im_end|>"
         if self.pooling_mode == "eos_token":
             if self.model.config._name_or_path == "meta-llama/Meta-Llama-3-8B":
                 text = text.strip() + "<|end_of_text|>"

@@ -16,6 +16,7 @@ LLM2Vec is a simple recipe to convert decoder-only LLMs into text encoders. It c
 
 **************************** **Updates** ****************************
 
+* 04/07: Added support for Gemma and Qwen-2 models, huge thanks to [@bzantium](https://github.com/bzantium) for the contribution.
 
 * 30/04: We release LLM2Vec transformed Meta-Llama-3 checkpoints. See our [HuggingFace collection](https://huggingface.co/collections/McGill-NLP/llm2vec-660e14f536b3c8d10b3f1c34) for both [supervised](https://huggingface.co/McGill-NLP/LLM2Vec-Meta-Llama-3-8B-Instruct-mntp-supervised) and [unsupervised](https://huggingface.co/McGill-NLP/LLM2Vec-Meta-Llama-3-8B-Instruct-mntp-unsup-simcse) variants.
 

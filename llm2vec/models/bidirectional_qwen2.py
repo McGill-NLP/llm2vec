@@ -1,12 +1,7 @@
 from typing import List, Optional, Tuple, Union
 import torch
 
-from transformers import (
-    Qwen2Model,
-    Qwen2ForCausalLM,
-    Qwen2PreTrainedModel,
-    Qwen2Config
-)
+from transformers import Qwen2Model, Qwen2ForCausalLM, Qwen2PreTrainedModel, Qwen2Config
 from transformers.modeling_outputs import BaseModelOutputWithPast
 from transformers.cache_utils import Cache, DynamicCache
 from transformers.models.qwen2.modeling_qwen2 import (
@@ -78,9 +73,14 @@ class Qwen2BiModel(Qwen2Model):
         self.padding_idx = config.pad_token_id
         self.vocab_size = config.vocab_size
 
-        self.embed_tokens = nn.Embedding(config.vocab_size, config.hidden_size, self.padding_idx)
+        self.embed_tokens = nn.Embedding(
+            config.vocab_size, config.hidden_size, self.padding_idx
+        )
         self.layers = nn.ModuleList(
-            [ModifiedQwen2DecoderLayer(config, layer_idx) for layer_idx in range(config.num_hidden_layers)]
+            [
+                ModifiedQwen2DecoderLayer(config, layer_idx)
+                for layer_idx in range(config.num_hidden_layers)
+            ]
         )
         self._attn_implementation = config._attn_implementation
         self.norm = Qwen2RMSNorm(config.hidden_size, eps=config.rms_norm_eps)
