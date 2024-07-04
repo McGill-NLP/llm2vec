@@ -355,18 +355,24 @@ class LLM2Vec(nn.Module):
                     for start_index in range(0, len(sentences), batch_size)
                 ]
 
-                progress_bar = tqdm(total=len(sentences_batches), desc="Batches", disable=not show_progress_bar)
+                progress_bar = tqdm(
+                    total=len(sentences_batches),
+                    desc="Batches",
+                    disable=not show_progress_bar,
+                )
                 results = []
 
                 def update(*args):
                     progress_bar.update()
 
                 for batch in sentences_batches:
-                    results.append(p.apply_async(
-                        self._encode,
-                        args=(batch, None, convert_to_numpy, True),
-                        callback=update
-                    ))
+                    results.append(
+                        p.apply_async(
+                            self._encode,
+                            args=(batch, None, convert_to_numpy, True),
+                            callback=update,
+                        )
+                    )
 
                 all_embeddings = [result.get() for result in results]
                 progress_bar.close()
