@@ -51,6 +51,8 @@ def initialize_peft(
     if lora_modules is None and model.config.__class__.__name__ in [
         "LlamaConfig",
         "MistralConfig",
+        "GemmaConfig",
+        "Qwen2Config",
     ]:
         lora_modules = [
             "q_proj",
