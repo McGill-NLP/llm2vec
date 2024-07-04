@@ -5,6 +5,7 @@ dist/
 wandb/**
 output/**
 cache/**
+results/**
 output/
 *.log
 cluster_scripts/**
