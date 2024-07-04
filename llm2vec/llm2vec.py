@@ -9,7 +9,7 @@ import torch
 import torch.multiprocessing as mp
 from peft import PeftModel
 from torch import Tensor, device, nn
-from tqdm.autonotebook import trange
+from tqdm.autonotebook import tqdm, trange
 from transformers import (
     AutoModel,
     AutoConfig,
@@ -352,20 +352,24 @@ class LLM2Vec(nn.Module):
             with cuda_compatible_multiprocess.Pool(num_proc) as p:
                 sentences_batches = [
                     sentences_sorted[start_index : start_index + batch_size]
-                    for start_index in trange(0, len(sentences), batch_size)
+                    for start_index in range(0, len(sentences), batch_size)
                 ]
-                for result in p.map(
-                    partial(
+
+                progress_bar = tqdm(total=len(sentences_batches), desc="Batches", disable=not show_progress_bar)
+                results = []
+
+                def update(*args):
+                    progress_bar.update()
+
+                for batch in sentences_batches:
+                    results.append(p.apply_async(
                         self._encode,
-                        # This branch only supports CUDA devices, so we ignore the value of device
-                        # and let _encode determine it based on rank.
-                        device=None,
-                        convert_to_numpy=convert_to_numpy,
-                        multiprocessing=True,
-                    ),
-                    sentences_batches,
-                ):
-                    all_embeddings.append(result)
+                        args=(batch, None, convert_to_numpy, True),
+                        callback=update
+                    ))
+
+                all_embeddings = [result.get() for result in results]
+                progress_bar.close()
 
         all_embeddings = torch.cat(all_embeddings, dim=0)
         all_embeddings = all_embeddings[np.argsort(length_sorted_idx)]
