@@ -32,11 +32,13 @@ model = LLM2Vec.from_pretrained(
     torch_dtype=torch.bfloat16,
 )
 
+
 def append_instruction(instruction, sentences):
     new_sentences = []
     for s in sentences:
         new_sentences.append([instruction, s, 0])
     return new_sentences
+
 
 print(f"Encoding {len(sentences_train)} training sentences...")
 sentences_train = append_instruction(instruction, sentences_train)

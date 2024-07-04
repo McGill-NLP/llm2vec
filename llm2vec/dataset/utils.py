@@ -22,6 +22,4 @@ def load_dataset(dataset_name, split="validation", file_path=None, **kwargs):
     if split not in ["train", "validation", "test"]:
         raise NotImplementedError(f"Split {split} not supported.")
 
-    return dataset_mapping[dataset_name](
-        split=split, file_path=file_path, **kwargs
-    )
+    return dataset_mapping[dataset_name](split=split, file_path=file_path, **kwargs)

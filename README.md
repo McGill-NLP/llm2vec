@@ -260,6 +260,27 @@ The config files contain all the parameters and configurations used in our paper
 [train_configs/word-task](train_configs/word-task) and [test_configs/word-task](train_configs/word-task) contain similar configurations for Llama-2-7B, Mistral-7B, and Sheared-Llama-1.3B for all Uni, Bi, Bi-MNTP, and Bi-MNTP-SimCSE (LLM2Vec) variants. 
 
 
+## Evaluation
+
+### MTEB Evaluation
+To evaluate the model on the MTEB benchmark, we use the `experiments/mteb_eval.py` script. The script requires `mteb>=1.12.60`, amongst other dependencies, which can be installed with the following command.
+```bash
+pip install llm2vec[evaluation]
+```
+
+The evaluation utilizes instructions for each task which are provided in the `test_configs/mteb/task_to_instructions.json` file. 
+
+To evaluate the supervised trained Meta-Llama-3-8B model on the `STS16` task, run the following command:
+```bash
+python experiments/mteb_eval.py --model_name McGill-NLP/LLM2Vec-Meta-Llama-3-8B-Instruct-mntp-supervised \
+--task_name STS16 \
+--task_to_instructions_fp test_configs/mteb/task_to_instructions.json \
+--output_dir results
+```
+
+The evaluation script supports all the models available in the [HuggingFace collection](https://huggingface.co/collections/McGill-NLP/llm2vec-660e14f536b3c8d10b3f1c34).
+
+
 ## Citation
 If you find our work helpful, please cite us:
 ```bibtex

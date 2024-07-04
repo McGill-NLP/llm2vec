@@ -22,11 +22,13 @@ model = LLM2Vec.from_pretrained(
     torch_dtype=torch.bfloat16,
 )
 
+
 def append_instruction(instruction, sentences):
     new_sentences = []
     for s in sentences:
         new_sentences.append([instruction, s, 0])
     return new_sentences
+
 
 v_measures = []
 for cluster_set in tqdm.tqdm(dataset["test"], desc="Clustering"):

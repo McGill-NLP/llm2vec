@@ -9,7 +9,7 @@ import torch
 import torch.multiprocessing as mp
 from peft import PeftModel
 from torch import Tensor, device, nn
-from tqdm.autonotebook import trange
+from tqdm.autonotebook import tqdm, trange
 from transformers import (
     AutoModel,
     AutoConfig,
@@ -296,7 +296,11 @@ class LLM2Vec(nn.Module):
             )
             tokenized_q_length = len(tokenized_q["input_ids"][0])
 
-        return f"{instruction.strip()} !@#$%^&*(){text}" if instruction else f"!@#$%^&*(){text}"
+        return (
+            f"{instruction.strip()} !@#$%^&*(){text}"
+            if instruction
+            else f"!@#$%^&*(){text}"
+        )
 
     def encode(
         self,
@@ -329,7 +333,7 @@ class LLM2Vec(nn.Module):
             sentences = [[""] + [sentence] for sentence in sentences]
 
         if device is None:
-                device = "cuda" if torch.cuda.is_available() else "cpu"
+            device = "cuda" if torch.cuda.is_available() else "cpu"
 
         concatenated_input_texts = []
         for sentence in sentences:
@@ -373,20 +377,30 @@ class LLM2Vec(nn.Module):
             with cuda_compatible_multiprocess.Pool(num_proc) as p:
                 sentences_batches = [
                     sentences_sorted[start_index : start_index + batch_size]
-                    for start_index in trange(0, len(sentences), batch_size)
+                    for start_index in range(0, len(sentences), batch_size)
                 ]
-                for result in p.map(
-                    partial(
-                        self._encode,
-                        # This branch only supports CUDA devices, so we ignore the value of device
-                        # and let _encode determine it based on rank.
-                        device=None,
-                        convert_to_numpy=convert_to_numpy,
-                        multiprocessing=True,
-                    ),
-                    sentences_batches,
-                ):
-                    all_embeddings.append(result)
+
+                progress_bar = tqdm(
+                    total=len(sentences_batches),
+                    desc="Batches",
+                    disable=not show_progress_bar,
+                )
+                results = []
+
+                def update(*args):
+                    progress_bar.update()
+
+                for batch in sentences_batches:
+                    results.append(
+                        p.apply_async(
+                            self._encode,
+                            args=(batch, None, convert_to_numpy, True),
+                            callback=update,
+                        )
+                    )
+
+                all_embeddings = [result.get() for result in results]
+                progress_bar.close()
 
         all_embeddings = torch.cat(all_embeddings, dim=0)
         all_embeddings = all_embeddings[np.argsort(length_sorted_idx)]
@@ -417,7 +431,13 @@ class LLM2Vec(nn.Module):
             with open(f"{output_path}/llm2vec_config.json", "w") as fOut:
                 json.dump(llm2vec_config, fOut, indent=4)
 
-    def _encode(self, sentences_batch, device:Optional[str]=None, convert_to_numpy:bool=False, multiprocessing=False):
+    def _encode(
+        self,
+        sentences_batch,
+        device: Optional[str] = None,
+        convert_to_numpy: bool = False,
+        multiprocessing=False,
+    ):
         if multiprocessing:
             # multiprocessing only supports CUDA devices at this time, so we ignore the value of device
             # and use cuda:rank for the device
