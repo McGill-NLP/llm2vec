@@ -2,11 +2,12 @@ import torch
 from torch import nn, Tensor
 from .loss_utils import cos_sim, mismatched_sizes_all_gather
 
-class HardNegativeNLLLoss():
+
+class HardNegativeNLLLoss:
     def __init__(
         self,
         scale: float = 20.0,
-        similarity_fct = cos_sim,
+        similarity_fct=cos_sim,
     ):
         self.scale = scale
         self.similarity_fct = similarity_fct
@@ -20,7 +21,7 @@ class HardNegativeNLLLoss():
     ):
         if d_reps_neg is None:
             d_reps_neg = d_reps_pos[:0, :]
-        
+
         if torch.distributed.is_initialized():
             full_d_reps_pos = mismatched_sizes_all_gather(d_reps_pos)
             full_d_reps_pos = torch.cat(full_d_reps_pos)
@@ -37,10 +38,8 @@ class HardNegativeNLLLoss():
 
         d_reps = torch.cat([full_d_reps_pos, full_d_reps_neg], dim=0)
         scores = self.similarity_fct(full_q_reps, d_reps) * self.scale
-        labels = (
-            torch.tensor(
-                range(len(scores)), dtype=torch.long, device=scores.device
-            )
+        labels = torch.tensor(
+            range(len(scores)), dtype=torch.long, device=scores.device
         )
 
         loss = self.cross_entropy_loss(scores, labels)

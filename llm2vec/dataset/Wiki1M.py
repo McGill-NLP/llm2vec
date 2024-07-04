@@ -3,6 +3,7 @@ from accelerate.logging import get_logger
 
 logger = get_logger(__name__, log_level="INFO")
 
+
 class Wiki1M(Dataset):
     def __init__(
         self,
@@ -37,8 +38,6 @@ class Wiki1M(Dataset):
     def __getitem__(self, index):
         sample = self.data[index]
         if self.split == "train":
-            return TrainSample(
-                texts=[sample.query, sample.positive], label=1.0
-            )
+            return TrainSample(texts=[sample.query, sample.positive], label=1.0)
         elif self.split == "validation":
             assert False, "Wiki1M does not have a validation split."
