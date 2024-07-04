@@ -16,12 +16,15 @@ from transformers import (
     AutoTokenizer,
     LlamaConfig,
     MistralConfig,
+    GemmaConfig,
+    Qwen2Config,
 )
 
 from .models import (
     MistralBiModel,
     LlamaBiModel,
     GemmaBiModel,
+    Qwen2BiModel,
 )
 
 logger = logging.getLogger(__name__)
@@ -66,6 +69,8 @@ class LLM2Vec(nn.Module):
             return LlamaBiModel
         elif config_class_name == "GemmaConfig":
             return GemmaBiModel
+        elif config_class_name == "Qwen2Config":
+            return Qwen2BiModel
         else:
             raise ValueError(
                 f"{config_class_name} is not supported yet with bidirectional models."
@@ -143,6 +148,23 @@ class LLM2Vec(nn.Module):
             "meta-llama/Llama-2-7b-chat-hf",
         ]:
             text = "[INST] " + text.strip() + " [/INST]"
+        if self.model.config._name_or_path in [
+            "google/gemma-2-9b-it",
+        ]:
+            text = (
+                "<bos><start_of_turn>user\n"
+                + text.strip()
+                + "<end_of_turn>"
+            )
+        if self.model.config._name_or_path in [
+            "Qwen/Qwen2-1.5B-Instruct",
+            "Qwen/Qwen2-7B-Instruct",
+        ]:
+            text = (
+                "<|im_start|>user\n"
+                + text.strip()
+                + "<|im_end|>"
+            )
         if self.pooling_mode == "eos_token":
             if self.model.config._name_or_path == "meta-llama/Meta-Llama-3-8B":
                 text = text.strip() + "<|end_of_text|>"
@@ -150,7 +172,10 @@ class LLM2Vec(nn.Module):
                 self.model.config, MistralConfig
             ):
                 text = text.strip() + " </s>"
-
+            elif isinstance(self.model.config, GemmaConfig):
+                text = text.strip() + "<eos>"
+            elif isinstance(self.model.config, Qwen2Config):
+                text = text.strip() + "<|endoftext|>"
         return text
 
     def tokenize(self, texts):

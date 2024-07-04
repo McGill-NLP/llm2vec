@@ -20,6 +20,8 @@ from transformers import (
     TrainerCallback,
     LlamaConfig,
     MistralConfig,
+    GemmaConfig,
+    Qwen2Config,
     set_seed,
 )
 from transformers.trainer_utils import seed_worker
@@ -56,6 +58,23 @@ def prepare_for_tokenization(model, text, pooling_mode="mean"):
         "meta-llama/Llama-2-7b-chat-hf",
     ]:
         text = "[INST] " + text.strip() + " [/INST]"
+    if model.config._name_or_path in [
+        "google/gemma-2-9b-it",
+    ]:
+        text = (
+            "<bos><start_of_turn>user\n"
+            + text.strip()
+            + "<end_of_turn>"
+        )
+    if model.config._name_or_path in [
+        "Qwen/Qwen2-1.5B-Instruct",
+        "Qwen/Qwen2-7B-Instruct",
+    ]:
+        text = (
+            "<|im_start|>user\n"
+            + text.strip()
+            + "<|im_end|>"
+        )
     if pooling_mode == "eos_token":
         if model.config._name_or_path == "meta-llama/Meta-Llama-3-8B":
             text = text.strip() + "<|end_of_text|>"
@@ -63,7 +82,10 @@ def prepare_for_tokenization(model, text, pooling_mode="mean"):
             model.config, MistralConfig
         ):
             text = text.strip() + " </s>"
-
+        elif isinstance(model.config, GemmaConfig):
+            text = text.strip() + "<eos>"
+        elif isinstance(model.config, Qwen2Config):
+            text = text.strip() + "<|endoftext|>"
     return text
 
 
@@ -77,6 +99,8 @@ def initialize_peft(
     if lora_modules is None and model.config.__class__.__name__ in [
         "LlamaConfig",
         "MistralConfig",
+        "GemmaConfig",
+        "Qwen2Config",
     ]:
         lora_modules = [
             "q_proj",
