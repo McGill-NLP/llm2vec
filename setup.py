@@ -22,7 +22,7 @@ setup(
         "tqdm",
         "torch",
         "peft",
-        "transformers>=4.39.1",
+        "transformers>=4.39.1,<=4.40.2",
         "datasets",
         "evaluate",
         "scikit-learn",
