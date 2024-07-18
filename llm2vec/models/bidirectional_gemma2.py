@@ -71,9 +71,13 @@ class ModifiedGemma2DecoderLayer(Gemma2DecoderLayer):
 
         self.mlp = Gemma2MLP(config)
         self.input_layernorm = Gemma2RMSNorm(config.hidden_size, eps=config.rms_norm_eps)
-        self.post_attention_layernorm = Gemma2RMSNorm(
-            config.hidden_size, eps=config.rms_norm_eps
-        )
+        self.post_attention_layernorm = Gemma2RMSNorm(config.hidden_size, eps=config.rms_norm_eps)
+
+        self.is_sliding = not bool(layer_idx % 2)
+        self.pre_feedforward_layernorm = Gemma2RMSNorm(config.hidden_size, eps=config.rms_norm_eps)
+        self.post_feedforward_layernorm = Gemma2RMSNorm(config.hidden_size, eps=config.rms_norm_eps)
+        self.sliding_window = config.sliding_window
+
 
 
 class Gemma2BiModel(Gemma2Model):
