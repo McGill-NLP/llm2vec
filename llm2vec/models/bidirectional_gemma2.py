@@ -3,7 +3,7 @@ import torch
 from packaging import version
 import importlib.metadata
 
-from transformers import GemmaModel, GemmaForCausalLM, GemmaPreTrainedModel, GemmaConfig
+from transformers import Gemma2Model, Gemma2ForCausalLM, Gemma2PreTrainedModel, Gemma2Config
 from transformers.models.gemma2.modeling_gemma2 import (
     Gemma2DecoderLayer,
     Gemma2Attention,
@@ -52,7 +52,7 @@ class ModifiedGemma2SdpaAttention(Gemma2SdpaAttention):
         self.is_causal = False
 
 
-GEMMA_ATTENTION_CLASSES = {
+GEMMA2_ATTENTION_CLASSES = {
     "eager": ModifiedGemma2Attention,
     "flash_attention_2": ModifiedGemma2FlashAttention2,
     "sdpa": ModifiedGemma2SdpaAttention,
@@ -60,11 +60,11 @@ GEMMA_ATTENTION_CLASSES = {
 
 
 class ModifiedGemma2DecoderLayer(Gemma2DecoderLayer):
-    def __init__(self, config: GemmaConfig, layer_idx: int):
+    def __init__(self, config: Gemma2Config, layer_idx: int):
         nn.Module.__init__(self)
         self.hidden_size = config.hidden_size
 
-        self.self_attn = GEMMA_ATTENTION_CLASSES[config._attn_implementation](
+        self.self_attn = GEMMA2_ATTENTION_CLASSES[config._attn_implementation](
             config=config, layer_idx=layer_idx
         )
 
@@ -75,15 +75,15 @@ class ModifiedGemma2DecoderLayer(Gemma2DecoderLayer):
         )
 
 
-class Gemma2BiModel(GemmaModel):
-    _no_split_modules = ["ModifiedGemmaDecoderLayer"]
+class Gemma2BiModel(Gemma2Model):
+    _no_split_modules = ["ModifiedGemma2DecoderLayer"]
 
-    def __init__(self, config: GemmaConfig):
+    def __init__(self, config: Gemma2Config):
         if not is_transformers_attn_greater_or_equal_4_41():
             raise ValueError(
-                "The current implementation of GemmaEncoderModel follows modeling_gemma.py of transformers version >= 4.41.0"
+                "The current implementation of Gemma2EncoderModel follows modeling_gemma2.py of transformers version >= 4.41.0"
             )
-        GemmaPreTrainedModel.__init__(self, config)
+        Gemma2PreTrainedModel.__init__(self, config)
         self.padding_idx = config.pad_token_id
         self.vocab_size = config.vocab_size
 
@@ -189,9 +189,9 @@ class Gemma2BiModel(GemmaModel):
         return causal_mask
 
 
-class Gemma2BiForMNTP(GemmaForCausalLM):
+class Gemma2BiForMNTP(Gemma2ForCausalLM):
     def __init__(self, config):
-        GemmaPreTrainedModel.__init__(self, config)
+        Gemma2PreTrainedModel.__init__(self, config)
         self.model = Gemma2BiModel(config)
         self.vocab_size = config.vocab_size
         self.lm_head = nn.Linear(config.hidden_size, config.vocab_size, bias=False)
