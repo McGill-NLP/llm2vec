@@ -52,6 +52,7 @@ QWEN2_ATTENTION_CLASSES = {
 class ModifiedQwen2DecoderLayer(Qwen2DecoderLayer):
     def __init__(self, config: Qwen2Config, layer_idx: int):
         nn.Module.__init__(self)
+        self.config = config
         self.hidden_size = config.hidden_size
 
         self.self_attn = QWEN2_ATTENTION_CLASSES[config._attn_implementation](

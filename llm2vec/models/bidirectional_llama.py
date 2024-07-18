@@ -70,6 +70,7 @@ LLAMA_ATTENTION_CLASSES = {
 class ModifiedLlamaDecoderLayer(LlamaDecoderLayer):
     def __init__(self, config: LlamaConfig, layer_idx: int):
         nn.Module.__init__(self)
+        self.config = config
         self.hidden_size = config.hidden_size
 
         self.self_attn = LLAMA_ATTENTION_CLASSES[config._attn_implementation](
