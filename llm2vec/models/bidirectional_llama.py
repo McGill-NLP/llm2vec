@@ -11,6 +11,7 @@ from transformers.models.llama.modeling_llama import (
     LlamaSdpaAttention,
     LlamaMLP,
     LlamaRMSNorm,
+    LlamaRotaryEmbedding,
 )
 
 from torch import nn
@@ -106,6 +107,7 @@ class LlamaBiModel(LlamaModel):
             ]
         )
         self.norm = LlamaRMSNorm(config.hidden_size, eps=config.rms_norm_eps)
+        self.rotary_emb = LlamaRotaryEmbedding(config=config)
         self.gradient_checkpointing = False
 
         # Initialize weights and apply final processing
