@@ -13,6 +13,7 @@ from tqdm.autonotebook import tqdm, trange
 from transformers import (
     AutoModel,
     AutoConfig,
+    PretrainedConfig,
     AutoTokenizer,
     LlamaConfig,
     MistralConfig,
@@ -102,6 +103,14 @@ class LLM2Vec(nn.Module):
             config_class_name, enable_bidirectional=enable_bidirectional
         )
         model = model_class.from_pretrained(base_model_name_or_path, **kwargs)
+
+        if os.path.isdir(base_model_name_or_path) and os.path.exists(
+            f"{base_model_name_or_path}/config.json"
+        ):
+            with open(f"{base_model_name_or_path}/config.json", "r") as fIn:
+                config_dict = json.load(fIn)
+            config = PretrainedConfig.from_dict(config_dict)
+            model.config._name_or_path = config._name_or_path
 
         # For special case where config.json and adapter weights are in the same directory
         if hasattr(model, "peft_config"):
