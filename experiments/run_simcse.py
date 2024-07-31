@@ -52,6 +52,7 @@ def initialize_peft(
         "LlamaConfig",
         "MistralConfig",
         "GemmaConfig",
+        "Gemma2Config",
         "Qwen2Config",
     ]:
         lora_modules = [

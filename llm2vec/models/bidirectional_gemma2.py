@@ -3,14 +3,14 @@ import torch
 from packaging import version
 import importlib.metadata
 
-from transformers import GemmaModel, GemmaForCausalLM, GemmaPreTrainedModel, GemmaConfig
-from transformers.models.gemma.modeling_gemma import (
-    GemmaDecoderLayer,
-    GemmaAttention,
-    GemmaFlashAttention2,
-    GemmaSdpaAttention,
-    GemmaMLP,
-    GemmaRMSNorm,
+from transformers import Gemma2Model, Gemma2ForCausalLM, Gemma2PreTrainedModel, Gemma2Config
+from transformers.models.gemma2.modeling_gemma2 import (
+    Gemma2DecoderLayer,
+    Gemma2Attention,
+    Gemma2FlashAttention2,
+    Gemma2SdpaAttention,
+    Gemma2MLP,
+    Gemma2RMSNorm,
 )
 
 from torch import nn
@@ -34,57 +34,57 @@ def is_transformers_attn_greater_or_equal_4_41():
     )
 
 
-class ModifiedGemmaAttention(GemmaAttention):
+class ModifiedGemma2Attention(Gemma2Attention):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.is_causal = False
 
 
-class ModifiedGemmaFlashAttention2(GemmaFlashAttention2):
+class ModifiedGemma2FlashAttention2(Gemma2FlashAttention2):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.is_causal = False
 
 
-class ModifiedGemmaSdpaAttention(GemmaSdpaAttention):
+class ModifiedGemma2SdpaAttention(Gemma2SdpaAttention):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.is_causal = False
 
 
-GEMMA_ATTENTION_CLASSES = {
-    "eager": ModifiedGemmaAttention,
-    "flash_attention_2": ModifiedGemmaFlashAttention2,
-    "sdpa": ModifiedGemmaSdpaAttention,
+GEMMA2_ATTENTION_CLASSES = {
+    "eager": ModifiedGemma2Attention,
+    "flash_attention_2": ModifiedGemma2FlashAttention2,
+    "sdpa": ModifiedGemma2SdpaAttention,
 }
 
 
-class ModifiedGemmaDecoderLayer(GemmaDecoderLayer):
-    def __init__(self, config: GemmaConfig, layer_idx: int):
+class ModifiedGemma2DecoderLayer(Gemma2DecoderLayer):
+    def __init__(self, config: Gemma2Config, layer_idx: int):
         nn.Module.__init__(self)
         self.config = config
         self.hidden_size = config.hidden_size
 
-        self.self_attn = GEMMA_ATTENTION_CLASSES[config._attn_implementation](
+        self.self_attn = GEMMA2_ATTENTION_CLASSES[config._attn_implementation](
             config=config, layer_idx=layer_idx
         )
 
-        self.mlp = GemmaMLP(config)
-        self.input_layernorm = GemmaRMSNorm(config.hidden_size, eps=config.rms_norm_eps)
-        self.post_attention_layernorm = GemmaRMSNorm(
-            config.hidden_size, eps=config.rms_norm_eps
-        )
+        self.mlp = Gemma2MLP(config)
+        self.input_layernorm = Gemma2RMSNorm(config.hidden_size, eps=config.rms_norm_eps)
+        self.post_attention_layernorm = Gemma2RMSNorm(config.hidden_size, eps=config.rms_norm_eps)
+
+        self.is_sliding = not bool(layer_idx % 2)
+        self.pre_feedforward_layernorm = Gemma2RMSNorm(config.hidden_size, eps=config.rms_norm_eps)
+        self.post_feedforward_layernorm = Gemma2RMSNorm(config.hidden_size, eps=config.rms_norm_eps)
+        self.sliding_window = config.sliding_window
 
 
-class GemmaBiModel(GemmaModel):
-    _no_split_modules = ["ModifiedGemmaDecoderLayer"]
 
-    def __init__(self, config: GemmaConfig):
-        if not is_transformers_attn_greater_or_equal_4_41():
-            raise ValueError(
-                "The current implementation of GemmaEncoderModel follows modeling_gemma.py of transformers version >= 4.41.0"
-            )
-        GemmaPreTrainedModel.__init__(self, config)
+class Gemma2BiModel(Gemma2Model):
+    _no_split_modules = ["ModifiedGemma2DecoderLayer"]
+
+    def __init__(self, config: Gemma2Config):
+        Gemma2PreTrainedModel.__init__(self, config)
         self.padding_idx = config.pad_token_id
         self.vocab_size = config.vocab_size
 
@@ -93,11 +93,11 @@ class GemmaBiModel(GemmaModel):
         )
         self.layers = nn.ModuleList(
             [
-                ModifiedGemmaDecoderLayer(config, layer_idx)
+                ModifiedGemma2DecoderLayer(config, layer_idx)
                 for layer_idx in range(config.num_hidden_layers)
             ]
         )
-        self.norm = GemmaRMSNorm(config.hidden_size, eps=config.rms_norm_eps)
+        self.norm = Gemma2RMSNorm(config.hidden_size, eps=config.rms_norm_eps)
         self.gradient_checkpointing = False
 
         # Initialize weights and apply final processing
@@ -111,43 +111,18 @@ class GemmaBiModel(GemmaModel):
         past_key_values: Cache,
         output_attentions: bool,
     ):
-        # TODO: As of torch==2.2.0, the `attention_mask` passed to the model in `generate` is 2D and of dynamic length even when the static
-        # KV cache is used. This is an issue for torch.compile which then recaptures cudagraphs at each decode steps due to the dynamic shapes.
-        # (`recording cudagraph tree for symint key 13`, etc.), which is VERY slow. A workaround is `@torch.compiler.disable`, but this prevents using
-        # `fullgraph=True`. See more context in https://github.com/huggingface/transformers/pull/29114
-
         if self.config._attn_implementation == "flash_attention_2":
             if attention_mask is not None and 0.0 in attention_mask:
                 return attention_mask
             return None
 
-        # For SDPA, when possible, we will rely on its `is_causal` argument instead of its `attn_mask` argument, in
-        # order to dispatch on Flash Attention 2. This feature is not compatible with static cache, as SDPA will fail
-        # to infer the attention mask.
-        past_seen_tokens = past_key_values.get_seq_length() if past_key_values is not None else 0
-        using_static_cache = isinstance(past_key_values, StaticCache)
-
-        # When output attentions is True, sdpa implementation's forward method calls the eager implementation's forward
-        # if self.config._attn_implementation == "sdpa" and not using_static_cache and not output_attentions:
-        #     if AttentionMaskConverter._ignore_causal_mask_sdpa(
-        #         attention_mask,
-        #         inputs_embeds=input_tensor,
-        #         past_key_values_length=past_seen_tokens,
-        #         is_training=self.training,
-        #     ):
-        #         return None
-
         dtype, device = input_tensor.dtype, input_tensor.device
         min_dtype = torch.finfo(dtype).min
         sequence_length = input_tensor.shape[1]
-        if using_static_cache:
+        if past_key_values is not None:
             target_length = past_key_values.get_max_length()
         else:
-            target_length = (
-                attention_mask.shape[-1]
-                if isinstance(attention_mask, torch.Tensor)
-                else past_seen_tokens + sequence_length + 1
-            )
+            target_length = attention_mask.shape[-1] if attention_mask is not None else input_tensor.shape[1]
 
         if attention_mask is not None and attention_mask.dim() == 4:
             # in this case we assume that the mask comes already in inverted form and requires no inversion or slicing
@@ -173,24 +148,13 @@ class GemmaBiModel(GemmaModel):
                 causal_mask[:, :, :, :mask_length] = causal_mask[:, :, :, :mask_length].masked_fill(
                     padding_mask, min_dtype
                 )
-        if (
-            self.config._attn_implementation == "sdpa"
-            and attention_mask is not None
-            and attention_mask.device.type == "cuda"
-            and not output_attentions
-        ):
-            # Attend to all tokens in fully masked rows in the causal_mask, for example the relevant first rows when
-            # using left padding. This is required by F.scaled_dot_product_attention memory-efficient attention path.
-            # Details: https://github.com/pytorch/pytorch/issues/110213
-            causal_mask = AttentionMaskConverter._unmask_unattended(causal_mask, min_dtype)
-
         return causal_mask
 
 
-class GemmaBiForMNTP(GemmaForCausalLM):
+class Gemma2BiForMNTP(Gemma2ForCausalLM):
     def __init__(self, config):
-        GemmaPreTrainedModel.__init__(self, config)
-        self.model = GemmaBiModel(config)
+        Gemma2PreTrainedModel.__init__(self, config)
+        self.model = Gemma2BiModel(config)
         self.vocab_size = config.vocab_size
         self.lm_head = nn.Linear(config.hidden_size, config.vocab_size, bias=False)
 

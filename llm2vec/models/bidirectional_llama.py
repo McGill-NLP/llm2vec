@@ -11,6 +11,7 @@ from transformers.models.llama.modeling_llama import (
     LlamaSdpaAttention,
     LlamaMLP,
     LlamaRMSNorm,
+    LlamaRotaryEmbedding,
 )
 
 from torch import nn
@@ -70,6 +71,7 @@ LLAMA_ATTENTION_CLASSES = {
 class ModifiedLlamaDecoderLayer(LlamaDecoderLayer):
     def __init__(self, config: LlamaConfig, layer_idx: int):
         nn.Module.__init__(self)
+        self.config = config
         self.hidden_size = config.hidden_size
 
         self.self_attn = LLAMA_ATTENTION_CLASSES[config._attn_implementation](
@@ -105,6 +107,7 @@ class LlamaBiModel(LlamaModel):
             ]
         )
         self.norm = LlamaRMSNorm(config.hidden_size, eps=config.rms_norm_eps)
+        self.rotary_emb = LlamaRotaryEmbedding(config=config)
         self.gradient_checkpointing = False
 
         # Initialize weights and apply final processing
