@@ -285,12 +285,13 @@ The evaluation script supports all the models available in the [HuggingFace coll
 ## Citation
 If you find our work helpful, please cite us:
 ```bibtex
-@article{llm2vec,
-      title={{LLM2Vec}: {L}arge Language Models Are Secretly Powerful Text Encoders}, 
-      author={Parishad BehnamGhader and Vaibhav Adlakha and Marius Mosbach and Dzmitry Bahdanau and Nicolas Chapados and Siva Reddy},
-      year={2024},
-      journal={arXiv preprint},
-      url={https://arxiv.org/abs/2404.05961}
+@inproceedings{
+llm2vec,
+title={{LLM2V}ec: Large Language Models Are Secretly Powerful Text Encoders},
+author={Parishad BehnamGhader and Vaibhav Adlakha and Marius Mosbach and Dzmitry Bahdanau and Nicolas Chapados and Siva Reddy},
+booktitle={First Conference on Language Modeling},
+year={2024},
+url={https://openreview.net/forum?id=IW1PR7vEBf}
 }
 ```
 
