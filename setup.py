@@ -28,7 +28,7 @@ setup(
         "scikit-learn",
     ],
     extras_require={
-        "evaluation": ["mteb>=1.12.60"],
+        "evaluation": ["mteb>=1.14.12"],
     },
     classifiers=[
         "Programming Language :: Python :: 3",
