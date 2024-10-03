@@ -1,8 +1,5 @@
 import torch
 
-from packaging import version
-import importlib.metadata
-
 from transformers import LlamaModel, LlamaForCausalLM, LlamaPreTrainedModel, LlamaConfig
 from transformers.models.llama.modeling_llama import (
     LlamaDecoderLayer,
@@ -19,29 +16,11 @@ from transformers.utils import logging
 from transformers.cache_utils import Cache, StaticCache
 
 from transformers.modeling_attn_mask_utils import AttentionMaskConverter
-from transformers.utils.import_utils import _is_package_available
+from .utils import is_transformers_attn_greater_or_equal_4_43_1
 
 from peft import PeftModel
 
 logger = logging.get_logger(__name__)
-
-
-def is_transformers_attn_greater_or_equal_4_43_1():
-    if not _is_package_available("transformers"):
-        return False
-
-    return version.parse(importlib.metadata.version("transformers")) >= version.parse(
-        "4.43.1"
-    )
-
-
-def is_transformers_attn_greater_or_equal_4_40():
-    if not _is_package_available("transformers"):
-        return False
-
-    return version.parse(importlib.metadata.version("transformers")) >= version.parse(
-        "4.40.0"
-    )
 
 
 class ModifiedLlamaAttention(LlamaAttention):
@@ -91,7 +70,7 @@ class LlamaBiModel(LlamaModel):
     def __init__(self, config: LlamaConfig):
         if not is_transformers_attn_greater_or_equal_4_43_1():
             raise ValueError(
-                "The current implementation of LlamaEncoderModel follows modeling_llama.py of transformers version >= 4.38.0"
+                "The current implementation of LlamaEncoderModel follows modeling_llama.py of transformers version >= 4.43.1"
             )
         LlamaPreTrainedModel.__init__(self, config)
         self.padding_idx = config.pad_token_id
