@@ -247,13 +247,8 @@ class LLM2Vec(nn.Module):
             self._skip_instruction(features)
         seq_lengths = features["attention_mask"].sum(dim=-1)
         if self.pooling_mode == "mean":
-            return torch.stack(
-                [
-                    last_hidden_states[i, -length:, :].mean(dim=0)
-                    for i, length in enumerate(seq_lengths)
-                ],
-                dim=0,
-            )
+            input_indices, offsets = self._get_input_offsets(features["attention_mask"])
+            return self._mean_embedding(last_hidden_states, input_indices, offsets)
         elif self.pooling_mode == "weighted_mean":
             bs, l, _ = last_hidden_states.shape
             complete_weights = torch.zeros(bs, l, device=last_hidden_states.device)
@@ -264,9 +259,6 @@ class LLM2Vec(nn.Module):
                         complete_weights[i].sum(), min=1e-9
                     )
             return torch.sum(last_hidden_states * complete_weights.unsqueeze(-1), dim=1)
-        elif self.pooling_mode == "embedding_bag":
-            input_indices, offsets = self._get_input_offsets(features["attention_mask"])
-            return self._mean_embedding(last_hidden_states, input_indices, offsets)
         elif self.pooling_mode == "eos_token" or self.pooling_mode == "last_token":
             return last_hidden_states[:, -1]
         elif self.pooling_mode == "bos_token":
