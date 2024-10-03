@@ -1,4 +1,3 @@
-from typing import List, Optional, Tuple, Union
 import torch
 
 from transformers import (
@@ -7,8 +6,6 @@ from transformers import (
     MistralForCausalLM,
     MistralConfig,
 )
-from transformers.modeling_outputs import BaseModelOutputWithPast
-from transformers.cache_utils import Cache, DynamicCache
 from transformers.models.mistral.modeling_mistral import (
     MistralDecoderLayer,
     MistralRMSNorm,
@@ -19,10 +16,10 @@ from transformers.models.mistral.modeling_mistral import (
 )
 from torch import nn
 from transformers.utils import logging
-from .attn_mask_utils import (
-    _prepare_4d_causal_attention_mask,
-    _prepare_4d_causal_attention_mask_for_sdpa,
-)
+from transformers.cache_utils import Cache, StaticCache, SlidingWindowCache
+
+from transformers.modeling_attn_mask_utils import AttentionMaskConverter
+from .utils import is_transformers_attn_greater_or_equal_4_43_1
 
 from peft import PeftModel
 
@@ -76,6 +73,10 @@ class MistralBiModel(MistralModel):
     _no_split_modules = ["ModifiedMistralDecoderLayer"]
 
     def __init__(self, config: MistralConfig):
+        if not is_transformers_attn_greater_or_equal_4_43_1():
+            raise ValueError(
+                "The current implementation of LlamaEncoderModel follows modeling_llama.py of transformers version >= 4.43.1"
+            )
         MistralPreTrainedModel.__init__(self, config)
         self.padding_idx = config.pad_token_id
         self.vocab_size = config.vocab_size
@@ -97,181 +98,125 @@ class MistralBiModel(MistralModel):
         self.post_init()
 
     # Copied from forward() in transformers.models.mistral.modeling_mistral.MistralModel
-    def forward(
+    def _update_causal_mask(
         self,
-        input_ids: torch.LongTensor = None,
-        attention_mask: Optional[torch.Tensor] = None,
-        position_ids: Optional[torch.LongTensor] = None,
-        past_key_values: Optional[List[torch.FloatTensor]] = None,
-        inputs_embeds: Optional[torch.FloatTensor] = None,
-        use_cache: Optional[bool] = None,
-        output_attentions: Optional[bool] = None,
-        output_hidden_states: Optional[bool] = None,
-        return_dict: Optional[bool] = None,
-    ) -> Union[Tuple, BaseModelOutputWithPast]:
-        output_attentions = (
-            output_attentions
-            if output_attentions is not None
-            else self.config.output_attentions
-        )
-        output_hidden_states = (
-            output_hidden_states
-            if output_hidden_states is not None
-            else self.config.output_hidden_states
-        )
-        use_cache = use_cache if use_cache is not None else self.config.use_cache
-
-        return_dict = (
-            return_dict if return_dict is not None else self.config.use_return_dict
-        )
-
-        # retrieve input_ids and inputs_embeds
-        if input_ids is not None and inputs_embeds is not None:
-            raise ValueError(
-                "You cannot specify both decoder_input_ids and decoder_inputs_embeds at the same time"
-            )
-        elif input_ids is not None:
-            batch_size, seq_length = input_ids.shape
-        elif inputs_embeds is not None:
-            batch_size, seq_length, _ = inputs_embeds.shape
-        else:
-            raise ValueError(
-                "You have to specify either decoder_input_ids or decoder_inputs_embeds"
-            )
-
-        if self.gradient_checkpointing and self.training:
-            if use_cache:
-                logger.warning_once(
-                    "`use_cache=True` is incompatible with gradient checkpointing. Setting `use_cache=False`..."
+        attention_mask: torch.Tensor,
+        input_tensor: torch.Tensor,
+        cache_position: torch.Tensor,
+        past_key_values: Cache,
+        use_cache: bool,
+        output_attentions: bool,
+    ):
+        if self._attn_implementation == "flash_attention_2":
+            if attention_mask is not None and use_cache:
+                is_padding_right = (
+                    attention_mask[:, -1].sum().item() != input_tensor.size()[0]
                 )
-                use_cache = False
+                if is_padding_right:
+                    raise ValueError(
+                        "You are attempting to perform batched generation with padding_side='right'"
+                        " this may lead to unexpected behaviour for Flash Attention version of Mistral. Make sure to "
+                        " call `tokenizer.padding_side  = 'left'` before tokenizing the input. "
+                    )
+            if attention_mask is not None and 0.0 in attention_mask:
+                return attention_mask
+            return None
 
-        past_key_values_length = 0
+        # For SDPA, when possible, we will rely on its `is_causal` argument instead of its `attn_mask` argument, in
+        # order to dispatch on Flash Attention 2. This feature is not compatible with static cache, as SDPA will fail
+        # to infer the attention mask.
 
-        if use_cache:
-            use_legacy_cache = not isinstance(past_key_values, Cache)
-            if use_legacy_cache:
-                past_key_values = DynamicCache.from_legacy_cache(past_key_values)
-            past_key_values_length = past_key_values.get_usable_length(seq_length)
+        # cache_position must be valid here no matter which cache we use
+        past_seen_tokens = cache_position[0] if past_key_values is not None else 0
+        using_static_cache = isinstance(past_key_values, StaticCache)
+        using_sliding_window_cache = isinstance(past_key_values, SlidingWindowCache)
 
-        if position_ids is None:
-            device = input_ids.device if input_ids is not None else inputs_embeds.device
-            position_ids = torch.arange(
-                past_key_values_length,
-                seq_length + past_key_values_length,
-                dtype=torch.long,
-                device=device,
-            )
-            position_ids = position_ids.unsqueeze(0).view(-1, seq_length)
+        # if (
+        #     self.config._attn_implementation == "sdpa"
+        #     and not (using_static_cache or using_sliding_window_cache)
+        #     and not output_attentions
+        # ):
+        #     if AttentionMaskConverter._ignore_causal_mask_sdpa(
+        #         attention_mask,
+        #         inputs_embeds=input_tensor,
+        #         past_key_values_length=past_seen_tokens,
+        #         sliding_window=self.config.sliding_window,
+        #         is_training=self.training,
+        #     ):
+        #         return None
+
+        dtype, device = input_tensor.dtype, input_tensor.device
+        min_dtype = torch.finfo(dtype).min
+        sequence_length = input_tensor.shape[1]
+        # SlidingWindowCache
+        if using_sliding_window_cache:
+            target_length = max(sequence_length, self.config.sliding_window)
+        # StaticCache
+        elif using_static_cache:
+            target_length = past_key_values.get_max_length()
+        # DynamicCache or no cache
         else:
-            position_ids = position_ids.view(-1, seq_length).long()
+            target_length = (
+                attention_mask.shape[-1]
+                if isinstance(attention_mask, torch.Tensor)
+                else past_seen_tokens + sequence_length + 1
+            )
 
-        if inputs_embeds is None:
-            inputs_embeds = self.embed_tokens(input_ids)
+        if attention_mask is not None and attention_mask.dim() == 4:
+            # in this case we assume that the mask comes already in inverted form and requires no inversion or slicing
+            if attention_mask.max() != 0:
+                raise ValueError(
+                    "Custom 4D attention mask should be passed in inverted form with max==0`"
+                )
+            causal_mask = attention_mask
+        else:
+            causal_mask = torch.zeros(
+                (sequence_length, target_length), dtype=dtype, device=device
+            )  # causal_mask = torch.full(
+            # (sequence_length, target_length), fill_value=min_dtype, dtype=dtype, device=device
+            # )
+            exclude_mask = torch.arange(
+                target_length, device=device
+            ) > cache_position.reshape(-1, 1)
+            if self.config.sliding_window is not None:
+                if (
+                    not using_sliding_window_cache
+                    or sequence_length > self.config.sliding_window
+                ):
+                    exclude_mask.bitwise_or_(
+                        torch.arange(target_length, device=device)
+                        <= (cache_position.reshape(-1, 1) - self.config.sliding_window)
+                    )
+            causal_mask *= exclude_mask
+            causal_mask = causal_mask[None, None, :, :].expand(
+                input_tensor.shape[0], 1, -1, -1
+            )
+            if attention_mask is not None:
+                causal_mask = (
+                    causal_mask.clone()
+                )  # copy to contiguous memory for in-place edit
+                if attention_mask.dim() == 2:
+                    mask_length = attention_mask.shape[-1]
+                    padding_mask = (
+                        causal_mask[:, :, :, :mask_length]
+                        + attention_mask[:, None, None, :]
+                    )
+                    padding_mask = padding_mask == 0
+                    causal_mask[:, :, :, :mask_length] = causal_mask[
+                        :, :, :, :mask_length
+                    ].masked_fill(padding_mask, min_dtype)
 
         if (
-            attention_mask is not None
-            and self._attn_implementation == "flash_attention_2"
-            and use_cache
+            self.config._attn_implementation == "sdpa"
+            and attention_mask is not None
+            and attention_mask.device.type == "cuda"
+            and not output_attentions
         ):
-            is_padding_right = attention_mask[:, -1].sum().item() != batch_size
-            if is_padding_right:
-                raise ValueError(
-                    "You are attempting to perform batched generation with padding_side='right'"
-                    " this may lead to unexpected behaviour for Flash Attention version of Mistral. Make sure to "
-                    " call `tokenizer.padding_side  = 'left'` before tokenizing the input. "
-                )
-
-        if self._attn_implementation == "flash_attention_2":
-            # 2d mask is passed through the layers
-            attention_mask = (
-                attention_mask
-                if (attention_mask is not None and 0 in attention_mask)
-                else None
-            )
-        elif self._attn_implementation == "sdpa" and not output_attentions:
-            # The original implementation is by-passed, see attn_mask_utils.py
-            attention_mask = _prepare_4d_causal_attention_mask_for_sdpa(
-                attention_mask,
-                (batch_size, seq_length),
-                inputs_embeds,
-                past_key_values_length,
-            )
-        else:
-            # 4d mask is passed through the layers
-            attention_mask = _prepare_4d_causal_attention_mask(
-                attention_mask,
-                (batch_size, seq_length),
-                inputs_embeds,
-                past_key_values_length,
-                sliding_window=self.config.sliding_window,
+            causal_mask = AttentionMaskConverter._unmask_unattended(
+                causal_mask, min_dtype
             )
 
-        hidden_states = inputs_embeds
-
-        # decoder layers
-        all_hidden_states = () if output_hidden_states else None
-        all_self_attns = () if output_attentions else None
-        next_decoder_cache = None
-
-        for decoder_layer in self.layers:
-            if output_hidden_states:
-                all_hidden_states += (hidden_states,)
-
-            if self.gradient_checkpointing and self.training:
-                layer_outputs = self._gradient_checkpointing_func(
-                    decoder_layer.__call__,
-                    hidden_states,
-                    attention_mask,
-                    position_ids,
-                    past_key_values,
-                    output_attentions,
-                    use_cache,
-                )
-            else:
-                layer_outputs = decoder_layer(
-                    hidden_states,
-                    attention_mask=attention_mask,
-                    position_ids=position_ids,
-                    past_key_value=past_key_values,
-                    output_attentions=output_attentions,
-                    use_cache=use_cache,
-                )
-
-            hidden_states = layer_outputs[0]
-
-            if use_cache:
-                next_decoder_cache = layer_outputs[2 if output_attentions else 1]
-
-            if output_attentions:
-                all_self_attns += (layer_outputs[1],)
-
-        hidden_states = self.norm(hidden_states)
-
-        # add hidden states from the last decoder layer
-        if output_hidden_states:
-            all_hidden_states += (hidden_states,)
-
-        next_cache = None
-        if use_cache:
-            next_cache = (
-                next_decoder_cache.to_legacy_cache()
-                if use_legacy_cache
-                else next_decoder_cache
-            )
-
-        if not return_dict:
-            return tuple(
-                v
-                for v in [hidden_states, next_cache, all_hidden_states, all_self_attns]
-                if v is not None
-            )
-        return BaseModelOutputWithPast(
-            last_hidden_state=hidden_states,
-            past_key_values=next_cache,
-            hidden_states=all_hidden_states,
-            attentions=all_self_attns,
-        )
+        return causal_mask
 
 
 class MistralBiForMNTP(MistralForCausalLM):
