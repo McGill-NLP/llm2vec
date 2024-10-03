@@ -372,7 +372,6 @@ class LLM2Vec(nn.Module):
                 )
                 all_embeddings.append(embeddings)
         else:
-
             num_proc = torch.cuda.device_count()
             cuda_compatible_multiprocess = mp.get_context("spawn")
             with cuda_compatible_multiprocess.Pool(num_proc) as p:

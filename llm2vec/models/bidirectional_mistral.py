@@ -107,10 +107,11 @@ class MistralBiModel(MistralModel):
         use_cache: bool,
         output_attentions: bool,
     ):
-
         if self._attn_implementation == "flash_attention_2":
             if attention_mask is not None and use_cache:
-                is_padding_right = attention_mask[:, -1].sum().item() != input_tensor.size()[0]
+                is_padding_right = (
+                    attention_mask[:, -1].sum().item() != input_tensor.size()[0]
+                )
                 if is_padding_right:
                     raise ValueError(
                         "You are attempting to perform batched generation with padding_side='right'"
@@ -164,32 +165,46 @@ class MistralBiModel(MistralModel):
         if attention_mask is not None and attention_mask.dim() == 4:
             # in this case we assume that the mask comes already in inverted form and requires no inversion or slicing
             if attention_mask.max() != 0:
-                raise ValueError("Custom 4D attention mask should be passed in inverted form with max==0`")
+                raise ValueError(
+                    "Custom 4D attention mask should be passed in inverted form with max==0`"
+                )
             causal_mask = attention_mask
         else:
             causal_mask = torch.zeros(
                 (sequence_length, target_length), dtype=dtype, device=device
-            ) # causal_mask = torch.full(
-                # (sequence_length, target_length), fill_value=min_dtype, dtype=dtype, device=device
-            #)
-            exclude_mask = torch.arange(target_length, device=device) > cache_position.reshape(-1, 1)
+            )  # causal_mask = torch.full(
+            # (sequence_length, target_length), fill_value=min_dtype, dtype=dtype, device=device
+            # )
+            exclude_mask = torch.arange(
+                target_length, device=device
+            ) > cache_position.reshape(-1, 1)
             if self.config.sliding_window is not None:
-                if not using_sliding_window_cache or sequence_length > self.config.sliding_window:
+                if (
+                    not using_sliding_window_cache
+                    or sequence_length > self.config.sliding_window
+                ):
                     exclude_mask.bitwise_or_(
                         torch.arange(target_length, device=device)
                         <= (cache_position.reshape(-1, 1) - self.config.sliding_window)
                     )
             causal_mask *= exclude_mask
-            causal_mask = causal_mask[None, None, :, :].expand(input_tensor.shape[0], 1, -1, -1)
+            causal_mask = causal_mask[None, None, :, :].expand(
+                input_tensor.shape[0], 1, -1, -1
+            )
             if attention_mask is not None:
-                causal_mask = causal_mask.clone()  # copy to contiguous memory for in-place edit
+                causal_mask = (
+                    causal_mask.clone()
+                )  # copy to contiguous memory for in-place edit
                 if attention_mask.dim() == 2:
                     mask_length = attention_mask.shape[-1]
-                    padding_mask = causal_mask[:, :, :, :mask_length] + attention_mask[:, None, None, :]
-                    padding_mask = padding_mask == 0
-                    causal_mask[:, :, :, :mask_length] = causal_mask[:, :, :, :mask_length].masked_fill(
-                        padding_mask, min_dtype
+                    padding_mask = (
+                        causal_mask[:, :, :, :mask_length]
+                        + attention_mask[:, None, None, :]
                     )
+                    padding_mask = padding_mask == 0
+                    causal_mask[:, :, :, :mask_length] = causal_mask[
+                        :, :, :, :mask_length
+                    ].masked_fill(padding_mask, min_dtype)
 
         if (
             self.config._attn_implementation == "sdpa"
@@ -197,9 +212,12 @@ class MistralBiModel(MistralModel):
             and attention_mask.device.type == "cuda"
             and not output_attentions
         ):
-            causal_mask = AttentionMaskConverter._unmask_unattended(causal_mask, min_dtype)
+            causal_mask = AttentionMaskConverter._unmask_unattended(
+                causal_mask, min_dtype
+            )
 
         return causal_mask
+
 
 class MistralBiForMNTP(MistralForCausalLM):
     def __init__(self, config):

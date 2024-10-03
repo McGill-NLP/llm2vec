@@ -279,7 +279,6 @@ class StopTrainingCallback(TrainerCallback):
 
 
 class LLM2VecSupervisedTrainer(Trainer):
-
     def __init__(
         self,
         *args,
