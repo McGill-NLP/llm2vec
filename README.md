@@ -16,7 +16,7 @@ LLM2Vec is a simple recipe to convert decoder-only LLMs into text encoders. It c
 
 **************************** **Updates** ****************************
 
-* 03/10: Added support for latest transformer versions, which support Llama 3.1, 3.2 and other latest models
+* 03/10: Added support for latest transformer versions, which support Llama 3.1, 3.2 and other latest models. Expanded support to evaluate any LLM2vec model, check [mteb_eval_custom.py](https://github.com/McGill-NLP/llm2vec/blob/main/experiments/mteb_eval_custom.py)
 
 * 04/07: Added support for Gemma and Qwen-2 models, huge thanks to [@bzantium](https://github.com/bzantium) for the contribution.
 
