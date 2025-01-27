@@ -25,6 +25,7 @@ from .models import (
     MistralBiModel,
     LlamaBiModel,
     GemmaBiModel,
+    Gemma2BiModel,
     Qwen2BiModel,
 )
 
@@ -70,6 +71,8 @@ class LLM2Vec(nn.Module):
             return LlamaBiModel
         elif config_class_name == "GemmaConfig":
             return GemmaBiModel
+        elif config_class_name == "Gemma2Config":
+            return Gemma2BiModel
         elif config_class_name == "Qwen2Config":
             return Qwen2BiModel
         else:

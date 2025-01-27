@@ -54,6 +54,7 @@ MISTRAL_ATTENTION_CLASSES = {
 class ModifiedMistralDecoderLayer(MistralDecoderLayer):
     def __init__(self, config: MistralConfig, layer_idx: int):
         nn.Module.__init__(self)
+        self.config = config
         self.hidden_size = config.hidden_size
 
         self.self_attn = MISTRAL_ATTENTION_CLASSES[config._attn_implementation](

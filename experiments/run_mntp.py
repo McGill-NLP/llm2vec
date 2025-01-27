@@ -56,6 +56,7 @@ from llm2vec.models import (
     MistralBiForMNTP,
     LlamaBiForMNTP,
     GemmaBiForMNTP,
+    Gemma2BiForMNTP,
     Qwen2BiForMNTP,
 )
 
@@ -80,6 +81,8 @@ def get_model_class(config):
         return LlamaBiForMNTP
     elif config_class_name == "GemmaConfig":
         return GemmaBiForMNTP
+    elif config_class_name == "Gemma2Config":
+        return Gemma2BiForMNTP
     elif config_class_name == "Qwen2Config":
         return Qwen2BiForMNTP
     else:
@@ -97,6 +100,7 @@ def initialize_peft(
         "LlamaConfig",
         "MistralConfig",
         "GemmaConfig",
+        "Gemma2Config",
         "Qwen2Config",
     ]:
         lora_modules = [
