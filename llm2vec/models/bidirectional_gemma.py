@@ -3,7 +3,10 @@ import torch
 from packaging import version
 import importlib.metadata
 
-from transformers import GemmaModel, GemmaForCausalLM, GemmaPreTrainedModel, GemmaConfig
+from transformers import (
+    GemmaModel, GemmaForCausalLM, GemmaPreTrainedModel, GemmaConfig,
+    Gemma2Model, Gemma2ForCausalLM, Gemma2PreTrainedModel, Gemma2Config
+)
 from transformers.models.gemma.modeling_gemma import (
     GemmaDecoderLayer,
     GemmaAttention,
@@ -75,10 +78,10 @@ class ModifiedGemmaDecoderLayer(GemmaDecoderLayer):
         )
 
 
-class GemmaBiModel(GemmaModel):
+class GemmaBiModel(GemmaModel, Gemma2Model):
     _no_split_modules = ["ModifiedGemmaDecoderLayer"]
 
-    def __init__(self, config: GemmaConfig):
+    def __init__(self, config):
         if not is_transformers_attn_greater_or_equal_4_41():
             raise ValueError(
                 "The current implementation of GemmaEncoderModel follows modeling_gemma.py of transformers version >= 4.41.0"
@@ -189,9 +192,12 @@ class GemmaBiModel(GemmaModel):
         return causal_mask
 
 
-class GemmaBiForMNTP(GemmaForCausalLM):
+class GemmaBiForMNTP(GemmaForCausalLM, Gemma2ForCausalLM):
     def __init__(self, config):
-        GemmaPreTrainedModel.__init__(self, config)
+        if isinstance(config, Gemma2Config):
+            Gemma2PreTrainedModel.__init__(self, config)
+        else:
+            GemmaPreTrainedModel.__init__(self, config)
         self.model = GemmaBiModel(config)
         self.vocab_size = config.vocab_size
         self.lm_head = nn.Linear(config.hidden_size, config.vocab_size, bias=False)

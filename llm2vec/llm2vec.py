@@ -18,6 +18,7 @@ from transformers import (
     LlamaConfig,
     MistralConfig,
     GemmaConfig,
+    Gemma2Config,
     Qwen2Config,
 )
 
@@ -68,7 +69,7 @@ class LLM2Vec(nn.Module):
             return MistralBiModel
         elif config_class_name == "LlamaConfig":
             return LlamaBiModel
-        elif config_class_name == "GemmaConfig":
+        elif config_class_name in ["GemmaConfig", "Gemma2Config"]:
             return GemmaBiModel
         elif config_class_name == "Qwen2Config":
             return Qwen2BiModel
@@ -311,6 +312,7 @@ class LLM2Vec(nn.Module):
         convert_to_numpy: bool = False,
         convert_to_tensor: bool = False,
         device: Optional[str] = None,
+        no_mp: bool = False,
     ):
         """
         Encode a list of sentences to their respective embeddings. The sentences can be a list of strings or a string.
@@ -354,7 +356,7 @@ class LLM2Vec(nn.Module):
         sentences_sorted = [sentences[idx] for idx in length_sorted_idx]
         all_embeddings = []
 
-        if torch.cuda.device_count() <= 1:
+        if no_mp or torch.cuda.device_count() <= 1:
             # This branch also support mps devices
             self.to(device)
             for start_index in trange(
