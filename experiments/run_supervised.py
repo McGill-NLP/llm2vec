@@ -59,6 +59,7 @@ def prepare_for_tokenization(model, text, pooling_mode="mean"):
     ]:
         text = "[INST] " + text.strip() + " [/INST]"
     if model.config._name_or_path in [
+        "google/gemma-7b-it",
         "google/gemma-2-9b-it",
     ]:
         text = "<bos><start_of_turn>user\n" + text.strip() + "<end_of_turn>"
@@ -92,6 +93,7 @@ def initialize_peft(
         "LlamaConfig",
         "MistralConfig",
         "GemmaConfig",
+        "Gemma2Config",
         "Qwen2Config",
     ]:
         lora_modules = [
