@@ -1,15 +1,15 @@
 from typing import List, Optional, Tuple, Union
 import torch
+from packaging import version
 
 from transformers import Qwen2Model, Qwen2ForCausalLM, Qwen2PreTrainedModel, Qwen2Config
+from transformers.modeling_layers import GradientCheckpointingLayer
 from transformers.modeling_outputs import BaseModelOutputWithPast
 from transformers.cache_utils import Cache, DynamicCache
 from transformers.models.qwen2.modeling_qwen2 import (
     Qwen2DecoderLayer,
     Qwen2RMSNorm,
     Qwen2Attention,
-    Qwen2FlashAttention2,
-    Qwen2SdpaAttention,
     Qwen2MLP,
 )
 from torch import nn
@@ -30,31 +30,32 @@ class ModifiedQwen2Attention(Qwen2Attention):
         self.is_causal = False
 
 
-class ModifiedQwen2FlashAttention2(Qwen2FlashAttention2):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.is_causal = False
+# class ModifiedQwen2FlashAttention2(Qwen2FlashAttention2):
+#     def __init__(self, *args, **kwargs):
+#         super().__init__(*args, **kwargs)
+#         self.is_causal = False
 
 
-class ModifiedQwen2SdpaAttention(Qwen2SdpaAttention):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.is_causal = False
+# class ModifiedQwen2SdpaAttention(Qwen2SdpaAttention):
+#     def __init__(self, *args, **kwargs):
+#         super().__init__(*args, **kwargs)
+#         self.is_causal = False
 
 
-QWEN2_ATTENTION_CLASSES = {
-    "eager": ModifiedQwen2Attention,
-    "flash_attention_2": ModifiedQwen2FlashAttention2,
-    "sdpa": ModifiedQwen2SdpaAttention,
-}
+# QWEN2_ATTENTION_CLASSES = {
+#     "eager": ModifiedQwen2Attention,
+#     "flash_attention_2": ModifiedQwen2FlashAttention2,
+#     "sdpa": ModifiedQwen2SdpaAttention,
+# }
 
 
 class ModifiedQwen2DecoderLayer(Qwen2DecoderLayer):
     def __init__(self, config: Qwen2Config, layer_idx: int):
-        nn.Module.__init__(self)
+        GradientCheckpointingLayer.__init__(self)
+        # nn.Module.__init__(self)
         self.hidden_size = config.hidden_size
 
-        self.self_attn = QWEN2_ATTENTION_CLASSES[config._attn_implementation](
+        self.self_attn = ModifiedQwen2Attention(
             config=config, layer_idx=layer_idx
         )
 

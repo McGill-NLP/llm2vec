@@ -6,12 +6,11 @@ from transformers import (
     MistralForCausalLM,
     MistralConfig,
 )
+from transformers.modeling_layers import GradientCheckpointingLayer
 from transformers.models.mistral.modeling_mistral import (
     MistralDecoderLayer,
     MistralRMSNorm,
     MistralAttention,
-    MistralFlashAttention2,
-    MistralSdpaAttention,
     MistralMLP,
 )
 from torch import nn
@@ -32,31 +31,32 @@ class ModifiedMistralAttention(MistralAttention):
         self.is_causal = False
 
 
-class ModifiedMistralFlashAttention2(MistralFlashAttention2):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.is_causal = False
+# class ModifiedMistralFlashAttention2(MistralFlashAttention2):
+#     def __init__(self, *args, **kwargs):
+#         super().__init__(*args, **kwargs)
+#         self.is_causal = False
 
 
-class ModifiedMistralSdpaAttention(MistralSdpaAttention):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.is_causal = False
+# class ModifiedMistralSdpaAttention(MistralSdpaAttention):
+#     def __init__(self, *args, **kwargs):
+#         super().__init__(*args, **kwargs)
+#         self.is_causal = False
 
 
-MISTRAL_ATTENTION_CLASSES = {
-    "eager": ModifiedMistralAttention,
-    "flash_attention_2": ModifiedMistralFlashAttention2,
-    "sdpa": ModifiedMistralSdpaAttention,
-}
+# MISTRAL_ATTENTION_CLASSES = {
+#     "eager": ModifiedMistralAttention,
+#     "flash_attention_2": ModifiedMistralFlashAttention2,
+#     "sdpa": ModifiedMistralSdpaAttention,
+# }
 
 
 class ModifiedMistralDecoderLayer(MistralDecoderLayer):
     def __init__(self, config: MistralConfig, layer_idx: int):
-        nn.Module.__init__(self)
+        GradientCheckpointingLayer.__init__(self)
+        # nn.Module.__init__(self)
         self.hidden_size = config.hidden_size
 
-        self.self_attn = MISTRAL_ATTENTION_CLASSES[config._attn_implementation](
+        self.self_attn = ModifiedMistralAttention(
             config, layer_idx
         )
 

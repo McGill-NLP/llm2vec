@@ -1,16 +1,15 @@
 import torch
 
+from packaging import version
 from transformers import LlamaModel, LlamaForCausalLM, LlamaPreTrainedModel, LlamaConfig
 from transformers.models.llama.modeling_llama import (
     LlamaDecoderLayer,
     LlamaAttention,
-    LlamaFlashAttention2,
-    LlamaSdpaAttention,
     LlamaMLP,
     LlamaRMSNorm,
     LlamaRotaryEmbedding,
 )
-
+from transformers.modeling_layers import GradientCheckpointingLayer
 from torch import nn
 from transformers.utils import logging
 from transformers.cache_utils import Cache, StaticCache
@@ -29,31 +28,32 @@ class ModifiedLlamaAttention(LlamaAttention):
         self.is_causal = False
 
 
-class ModifiedLlamaFlashAttention2(LlamaFlashAttention2):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.is_causal = False
+# class ModifiedLlamaFlashAttention2(LlamaFlashAttention2):
+#     def __init__(self, *args, **kwargs):
+#         super().__init__(*args, **kwargs)
+#         self.is_causal = False
 
 
-class ModifiedLlamaSdpaAttention(LlamaSdpaAttention):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.is_causal = False
+# class ModifiedLlamaSdpaAttention(LlamaSdpaAttention):
+#     def __init__(self, *args, **kwargs):
+#         super().__init__(*args, **kwargs)
+#         self.is_causal = False
 
 
-LLAMA_ATTENTION_CLASSES = {
-    "eager": ModifiedLlamaAttention,
-    "flash_attention_2": ModifiedLlamaFlashAttention2,
-    "sdpa": ModifiedLlamaSdpaAttention,
-}
+# LLAMA_ATTENTION_CLASSES = {
+#     "eager": ModifiedLlamaAttention,
+#     "flash_attention_2": ModifiedLlamaFlashAttention2,
+#     "sdpa": ModifiedLlamaSdpaAttention,
+# }
 
 
 class ModifiedLlamaDecoderLayer(LlamaDecoderLayer):
     def __init__(self, config: LlamaConfig, layer_idx: int):
-        nn.Module.__init__(self)
+        GradientCheckpointingLayer.__init__(self)
+        # nn.Module.__init__(self)
         self.hidden_size = config.hidden_size
 
-        self.self_attn = LLAMA_ATTENTION_CLASSES[config._attn_implementation](
+        self.self_attn = ModifiedLlamaAttention(
             config=config, layer_idx=layer_idx
         )
 
